@@ -1,0 +1,1731 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>VOLT FORGE ── 電気×設計 朝15分道場</title>
+<meta name="theme-color" content="#070a10">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background:
+      radial-gradient(ellipse 70% 40% at 20% 0%, rgba(255,214,79,0.06), transparent),
+      radial-gradient(ellipse 60% 40% at 85% 100%, rgba(79,209,255,0.07), transparent),
+      #04070c;
+    color: #dfe9f5;
+    font-family: "Yu Gothic UI", "Hiragino Sans", "Meiryo", system-ui, sans-serif;
+    overscroll-behavior-y: contain;
+  }
+  #app { max-width: 470px; margin: 0 auto; padding: 18px 16px 40px; min-height: 100%; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .phase { display: none; }
+  .phase.active { display: block; }
+
+  .cta {
+    display: block; width: 100%; margin-top: 14px; padding: 14px; border: none; border-radius: 13px;
+    font: inherit; font-weight: 900; font-size: 16px; color: #071019; cursor: pointer;
+    background: linear-gradient(135deg, #ffd64f, #ffe68a);
+    box-shadow: 0 0 18px rgba(255,214,79,0.3);
+  }
+  .cta.alt {
+    color: #efe8ff; border: 1.5px solid rgba(160,123,255,0.65);
+    background: linear-gradient(135deg, rgba(160,123,255,0.28), rgba(79,209,255,0.16));
+    box-shadow: 0 0 14px rgba(160,123,255,0.25);
+  }
+  .cta:disabled { opacity: 0.35; box-shadow: none; }
+  .opt {
+    display: block; width: 100%; margin-top: 10px; padding: 15px 16px; border-radius: 13px;
+    border: 1.5px solid #2a3c56; background: #0b1220; color: #dfeaf6;
+    font: inherit; font-size: 16px; font-weight: 700; text-align: left; cursor: pointer;
+  }
+  .opt.correct { border-color: #3ef0a0; color: #d9ffee; background: rgba(62,240,160,0.10); box-shadow: 0 0 14px rgba(62,240,160,0.25); }
+  .opt.wrong { border-color: #ff5d4d; color: #ffd9d0; background: rgba(255,93,77,0.08); }
+  .opt.dim { opacity: 0.45; }
+
+  /* ===== ホーム ===== */
+  .home-logo {
+    text-align: center; font-size: 30px; font-weight: 900; letter-spacing: 5px; color: #fff8e6;
+    margin-top: 12px; text-shadow: 0 0 16px rgba(255,214,79,0.8), 0 0 44px rgba(255,214,79,0.3);
+  }
+  .home-sub { text-align: center; font-size: 13px; color: #9fb4cb; margin: 6px 0 18px; }
+  .resume {
+    display: block; width: 100%; padding: 15px; border: 1px solid rgba(255,214,79,0.6); border-radius: 14px;
+    background: linear-gradient(135deg, rgba(255,214,79,0.20), rgba(79,209,255,0.16));
+    color: #fff8e6; font: inherit; font-weight: 900; font-size: 16px; cursor: pointer;
+    box-shadow: 0 0 20px rgba(255,214,79,0.22); text-align: center;
+  }
+  .resume small { display: block; font-weight: 600; font-size: 11.5px; color: #ffe9a3; margin-top: 3px; }
+  .prog-row { display: flex; align-items: center; gap: 10px; margin: 16px 0 6px; font-size: 12px; color: #8fa6bd; }
+  .prog-bar { flex: 1; height: 9px; border-radius: 5px; background: #101825; overflow: hidden; }
+  .prog-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ffd64f, #4fd1ff); border-radius: 5px; transition: width 0.6s; }
+  .chap-title { font-size: 13.5px; font-weight: 800; color: #bcd2e8; margin: 16px 0 10px; }
+  .chap-title span { color: #5d7690; font-weight: 600; font-size: 11px; }
+  .nodes { display: flex; flex-wrap: wrap; gap: 12px 14px; }
+  .node { width: 56px; text-align: center; cursor: pointer; border: none; background: none; font: inherit; padding: 0; }
+  .node .dot {
+    width: 44px; height: 44px; margin: 0 auto; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800; border: 2px solid #24344a; color: #4d637d; background: #0b1220;
+  }
+  .node .lbl { font-size: 10px; color: #5d7690; margin-top: 4px; }
+  .node.done .dot { border-color: #ffd64f; color: #1a1402; background: #ffd64f; box-shadow: 0 0 12px rgba(255,214,79,0.5); }
+  .node.done .lbl { color: #ffe9a3; }
+  .node.now .dot { border-color: #a07bff; color: #d9c8ff; background: rgba(160,123,255,0.15); animation: pulse 1.6s infinite; }
+  .node.now .lbl { color: #c9b4ff; font-weight: 800; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(160,123,255,0.55); } 55% { box-shadow: 0 0 0 10px rgba(160,123,255,0); } }
+  .node.lock { opacity: 0.35; cursor: default; }
+  .chap2 {
+    margin-top: 18px; padding: 13px 14px; border-radius: 13px;
+    border: 1px dashed #24344a; color: #7b90a6; font-size: 13px; line-height: 1.7;
+  }
+  .streak { margin-top: 16px; text-align: center; font-size: 12.5px; color: #ffb45d; }
+  .installhint { margin-top: 20px; text-align: center; font-size: 10.5px; color: #3d5169; }
+  .verline { margin-top: 6px; text-align: center; font-size: 10px; color: #2c3d52; }
+
+  /* ===== レッスン共通 ===== */
+  .lesson-top { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; font-size: 15px; font-weight: 800; color: #eaf6ff; }
+  .backbtn {
+    border: 1.5px solid #24344a; background: #0b1220; color: #ffe9a3; font: inherit; font-size: 16px;
+    width: 38px; height: 38px; border-radius: 11px; cursor: pointer; flex: none;
+  }
+  .tag {
+    background: rgba(255,214,79,0.14); border: 1px solid rgba(255,214,79,0.5);
+    color: #ffe9a3; padding: 3px 9px; border-radius: 7px; font-size: 12px; white-space: nowrap;
+  }
+
+  .mission-card {
+    border: 1.5px solid rgba(255,157,77,0.7); border-radius: 16px; padding: 18px 16px;
+    background: linear-gradient(160deg, rgba(255,157,77,0.10), rgba(7,10,16,0.2));
+    box-shadow: 0 0 22px rgba(255,157,77,0.15);
+  }
+  .mno { font-size: 12px; color: #ffb45d; font-weight: 800; letter-spacing: 2px; }
+  .mq { font-size: 20px; font-weight: 900; color: #fff2e3; line-height: 1.65; margin-top: 9px; }
+  .mhint { margin-top: 12px; font-size: 13.5px; color: #c39d72; }
+
+  .stage3d {
+    position: relative; border-radius: 15px; overflow: hidden;
+    border: 1px solid #182436; background: #14171d; height: 46vh; max-height: 340px; min-height: 250px;
+  }
+  .stage3d canvas { display: block; touch-action: none; cursor: grab; }
+  .stage3d::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 75% 70% at 50% 45%, transparent 55%, rgba(0,0,0,0.38) 100%);
+  }
+  .chip {
+    position: absolute; z-index: 4; pointer-events: none;
+    padding: 4px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 800;
+    color: #eef4fa; background: rgba(10,12,16,0.82); border: 1.5px solid rgba(210,225,240,0.75);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  }
+  .chip.red { color: #ffd9d0; border-color: rgba(255,93,77,0.9); background: rgba(80,16,8,0.85); }
+  .hint3d {
+    position: absolute; top: 9px; right: 9px; z-index: 4; font-size: 10.5px; color: #cfe0f0;
+    background: rgba(10,12,16,0.72); padding: 4px 10px; border-radius: 999px;
+    border: 1px solid rgba(200,220,240,0.25); pointer-events: none;
+  }
+  .guessline { font-size: 13px; color: #ff9d94; margin-bottom: 8px; font-weight: 700; }
+  .boom {
+    position: absolute; inset: 0; z-index: 5; display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 6px; background: rgba(120,20,10,0.18); pointer-events: none;
+  }
+  .boom.show { display: flex; }
+  .boom .b1 { font-size: 30px; font-weight: 900; color: #ffe2da; text-shadow: 0 0 22px rgba(255,60,40,0.95); transform: rotate(-8deg); }
+  .boom .b2 { font-size: 13px; font-weight: 800; color: #cfe0f0; text-shadow: 0 1px 6px #000; }
+  .flash { position: absolute; inset: 0; z-index: 6; background: #fff; opacity: 0; pointer-events: none; }
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px 12px; margin-top: 10px; font-size: 12.5px; color: #bccddf; }
+  .sliderrow { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 14.5px; color: #d0e0f0; }
+  .sliderrow input[type=range] { flex: 1; accent-color: #ffd64f; min-width: 0; height: 32px; }
+  .sliderrow .val { min-width: 66px; text-align: right; font-weight: 800; color: #ffe9a3; font-size: 16px; }
+  .extra { margin-top: 10px; }
+  .extra .btnrow { display: flex; gap: 8px; }
+  .extra .sbtn {
+    flex: 1; padding: 12px 4px; border-radius: 11px; border: 1.5px solid #2a3c56; background: #0b1220;
+    color: #b3c5d8; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer;
+  }
+  .extra .sbtn.on { border-color: #ffd64f; color: #ffe9a3; background: rgba(255,214,79,0.10); }
+  .readout { margin-top: 9px; text-align: center; font-size: 14px; color: #ffb45d; font-weight: 700; }
+  .gauge { position: relative; margin-top: 10px; height: 14px; border-radius: 8px; background: #101825; overflow: hidden; }
+  .gauge .gfill { height: 100%; width: 0%; background: linear-gradient(90deg, #4fd1ff, #ffd64f, #ff5d4d); }
+  .gauge .gmark { position: absolute; top: -2px; bottom: -2px; left: 80%; width: 2px; background: #ff5d4d; box-shadow: 0 0 8px rgba(255,93,77,0.9); }
+  .gcap { display: flex; justify-content: space-between; font-size: 11px; color: #7b90a6; margin-top: 3px; }
+  .trynote { margin-top: 10px; text-align: center; font-size: 13px; color: #93a8bd; line-height: 1.65; }
+
+  .result-banner {
+    border: 1.5px solid rgba(62,240,160,0.6); border-radius: 14px; padding: 13px;
+    background: rgba(62,240,160,0.07); text-align: center;
+    font-size: 15.5px; font-weight: 900; color: #d9ffee;
+  }
+  .result-banner small { display: block; font-weight: 600; font-size: 11.5px; color: #8fd8b4; margin-top: 4px; }
+  .minicard {
+    border: 1px solid #1d2c42; border-radius: 15px; padding: 24px 18px; margin-top: 14px;
+    background: linear-gradient(165deg, #0d1524, #0a0f1a);
+    font-size: 19.5px; color: #e2edf8; line-height: 1.85; min-height: 160px;
+    display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 600;
+  }
+  .minicard b { color: #ffe9a3; }
+  .minicard em { font-style: normal; color: #ff8f85; }
+  .dots { text-align: center; margin-top: 12px; letter-spacing: 6px; color: #24344a; font-size: 13px; }
+  .dots span { color: #ffd64f; }
+
+  .qhead { font-size: 13px; font-weight: 800; color: #b491ff; letter-spacing: 1px; margin-bottom: 8px; }
+  .q { font-size: 18px; font-weight: 800; color: #eaf6ff; line-height: 1.7; }
+  .expl {
+    margin-top: 13px; padding: 13px 14px; border-left: 3px solid #3ef0a0; border-radius: 7px;
+    background: rgba(62,240,160,0.06); font-size: 14.5px; color: #c6e4d5; line-height: 1.75;
+  }
+
+  .center { text-align: center; }
+  .stamp {
+    display: inline-block; margin-top: 34px; padding: 25px 22px; border: 3.5px solid #ffd64f; border-radius: 50%;
+    color: #ffd64f; font-weight: 900; font-size: 21px; transform: rotate(-11deg);
+    text-shadow: 0 0 14px rgba(255,214,79,0.8);
+    box-shadow: 0 0 26px rgba(255,214,79,0.35), inset 0 0 16px rgba(255,214,79,0.15);
+    animation: stampin 0.45s cubic-bezier(0.2, 2.2, 0.4, 1);
+  }
+  @keyframes stampin { 0% { transform: rotate(-11deg) scale(2.2); opacity: 0; } 100% { transform: rotate(-11deg) scale(1); opacity: 1; } }
+  .stamp small { display: block; font-size: 11px; font-weight: 700; }
+  .clearmsg { margin-top: 18px; font-size: 15px; color: #b3c5d8; line-height: 1.85; }
+  .bossscore { margin-top: 30px; font-size: 42px; font-weight: 900; color: #fff8e6; text-shadow: 0 0 18px rgba(255,214,79,0.7); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ ホーム ============ -->
+  <section id="viewHome" class="view active">
+    <div class="home-logo">VOLT FORGE</div>
+    <div class="home-sub">電気×設計 ── 朝15分・触って流して覚える道場</div>
+    <button class="resume" id="btnResume"></button>
+    <div class="prog-row"><span id="progText"></span><div class="prog-bar"><div class="prog-fill" id="progFill"></div></div><span>クリア</span></div>
+    <div class="chap-title">第1章 電気を見る <span>（電気のきそ・全6回＋ボス）</span></div>
+    <div class="nodes" id="nodes1"></div>
+    <div class="chap2">🔒 第2章 制御盤へ（リレー・シーケンス・センサー）<br>第1章クリアで解放（次のアップデートで配信）</div>
+    <div class="streak" id="streakLine"></div>
+    <div class="installhint">スマホ：ブラウザの共有メニュー →「ホーム画面に追加」でアプリになる</div>
+    <div class="verline">VOLT FORGE v1.0 ─ 第1章（FORCE FORGEの兄弟）</div>
+  </section>
+
+  <!-- ============ レッスン ============ -->
+  <section id="viewLesson" class="view">
+    <div class="lesson-top">
+      <button class="backbtn" id="btnBack">←</button>
+      <span class="tag" id="lsTag"></span><span id="lsTitle"></span>
+    </div>
+
+    <div id="phMission" class="phase">
+      <div class="mission-card">
+        <div class="mno" id="msNo"></div>
+        <div class="mq" id="msQ"></div>
+      </div>
+      <div id="msOpts"></div>
+      <div class="mhint">↑ 予想してタップ（外れてもOK。実験で確かめる）</div>
+    </div>
+
+    <div id="phExp" class="phase">
+      <div class="guessline" id="guessLine"></div>
+      <div class="stage3d" id="stage3d">
+        <div id="stageChips"></div>
+        <div class="hint3d" id="hint3d">👆 タップ＝操作／ドラッグ＝回転</div>
+        <div class="flash" id="flash"></div>
+        <div class="boom" id="boom"><span class="b1" id="boomText">パチン!!</span><span class="b2">🔧 画面タップで部品交換</span></div>
+      </div>
+      <div class="legend" id="expLegend"></div>
+      <div class="sliderrow"><span id="sliderLabel"></span><input type="range" id="loadRange" min="0" max="100" value="0"><span class="val" id="loadVal">0</span></div>
+      <div class="extra" id="extraCtrls"></div>
+      <div class="trynote" id="expNote"></div>
+      <button class="cta alt" id="btnMicro">🔬 ミクロの目（電子で見る）</button>
+      <button class="cta" id="btnToReveal" disabled>答え合わせ →</button>
+    </div>
+
+    <div id="phReveal" class="phase">
+      <div class="result-banner" id="rvBanner"></div>
+      <div class="minicard" id="rvCard"></div>
+      <div class="dots" id="rvDots"></div>
+      <button class="cta" id="btnCardNext">つぎ →</button>
+    </div>
+
+    <div id="phQuiz" class="phase">
+      <div class="qhead">ミニクイズ ── 1問だけ</div>
+      <div class="q" id="qzQ"></div>
+      <div id="qzOpts"></div>
+      <div class="expl" id="qzExp" style="display:none"></div>
+      <button class="cta" id="btnQuizDone" style="display:none">クリア！ →</button>
+    </div>
+
+    <div id="phClear" class="phase center">
+      <div class="stamp" id="clearStamp"></div>
+      <div class="clearmsg" id="clearMsg"></div>
+      <button class="cta" id="btnGoHome">マップへもどる</button>
+    </div>
+  </section>
+
+  <!-- ============ ボス戦 ============ -->
+  <section id="viewBoss" class="view">
+    <div class="lesson-top">
+      <button class="backbtn" id="btnBackB">←</button>
+      <span class="tag">L7</span><span>章ボス戦 ── 7問</span>
+    </div>
+    <div id="bossPlay">
+      <div class="qhead" id="bsProgress"></div>
+      <div class="q" id="bsQ"></div>
+      <div id="bsOpts"></div>
+      <div class="expl" id="bsExp" style="display:none"></div>
+      <button class="cta" id="btnBossNext" style="display:none">つぎ →</button>
+    </div>
+    <div id="bossResult" class="center" style="display:none">
+      <div class="bossscore" id="bsScore"></div>
+      <div class="clearmsg" id="bsMsg"></div>
+      <button class="cta" id="btnBossHome">マップへもどる</button>
+    </div>
+  </section>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
+<script>
+"use strict";
+
+/* ================================================================
+   VOLT FORGE v1.0 ── 第1章「電気を見る」
+   FORCE FORGEの兄弟。合体型（マップ×ミッション）＋リアル実験台
+   ＋電子の流れ＋ミクロの目（銅の原子と自由電子）
+================================================================ */
+
+// ---------------- レッスンデータ ----------------
+const LESSONS = [
+  {
+    id: "l1", tag: "L1", label: "電気", title: "電気ってなに？",
+    mission: {
+      no: "MISSION 01 ── 電池・スイッチ・ランプ",
+      q: "銅線の中を流れて（動いて）<br>いるのは？",
+      opts: ["水みたいな液体", "電子（マイナスの粒）", "光"], ans: 1,
+      ansLine: "電子（銅の中の自由電子が、押されて流れる）"
+    },
+    sliderLabel: "電圧", val: (v) => (v * 0.12).toFixed(1) + "V", grabAxis: "x", springBack: false,
+    note: "👆 回路をタップ＝スイッチON/OFF。<br>スライダー＝電圧（押す力）。光る粒＝電子。",
+    legend: ['<span style="color:#7fe0ff">● 光る粒＝電子の流れ</span>', '<span style="color:#ffe9a3">■ 輪っか＝回路（かいろ）</span>'],
+    cards: [
+      "電気＝<b>電子</b>（でんし）の流れ。<br>マイナスの小さな粒。<br><em>目に見えない</em>。",
+      "電池＝電子を押し出す<b>ポンプ</b>。<br>ランプ＝電子が通ると光る。",
+      "回路（かいろ）＝<em>輪っか</em>。<br>1カ所切れたら全部止まる。<br>それが「スイッチ」。"
+    ],
+    quiz: {
+      q: "回路の輪っかが1カ所切れたら？",
+      opts: ["半分だけ流れる", "全部止まる", "逆に流れる"], ans: 1,
+      exp: "電気は輪っかがつながってる時だけ流れる。スイッチはわざと切る場所。"
+    }
+  },
+  {
+    id: "l2", tag: "L2", label: "電圧", title: "電圧＝押す力",
+    mission: {
+      no: "MISSION 02 ── 電池を積む",
+      q: "電池を2本直列（縦つなぎ）。<br>押す力は？",
+      opts: ["変わらない", "2倍", "半分"], ans: 1,
+      ansLine: "2倍（1.5V＋1.5V＝3V。足し算になる）"
+    },
+    sliderLabel: "電圧", val: (v) => (v * 0.12).toFixed(1) + "V", grabAxis: "x", springBack: false,
+    note: "スライダーで電池を積め（電圧UP）。<br>ランプの定格（限界）は6V。9.6Vを超えると…プチッ",
+    legend: ['<span style="color:#ffe9a3">■ 電池の本数＝電圧</span>', '<span style="color:#7fe0ff">● 粒の速さ＝勢い</span>'],
+    cards: [
+      "電圧（でんあつ）＝<b>押す力</b>。<br>単位はV（ボルト）。",
+      "直列（ちょくれつ＝縦つなぎ）は<br><em>足し算</em>。<br>1.5V＋1.5V＝3V。",
+      "強すぎると部品が死ぬ。<br>部品には<b>定格</b>（ていかく＝限界の表示）がある。"
+    ],
+    quiz: {
+      q: "電圧の単位は？",
+      opts: ["A（アンペア）", "V（ボルト）", "Ω（オーム）"], ans: 1,
+      exp: "電圧＝V。電流＝A。抵抗＝Ω。この3つが電気の主役。"
+    }
+  },
+  {
+    id: "l3", tag: "L3", label: "オーム", title: "電流と抵抗（オームの法則）",
+    mission: {
+      no: "MISSION 03 ── 太い線 vs 細い線",
+      q: "同じ電圧をかける。<br>細い線を流れる電流は？",
+      opts: ["多い", "同じ", "少ない"], ans: 2,
+      ansLine: "少ない（細い＝抵抗が大きい＝通りにくい）"
+    },
+    sliderLabel: "電圧", val: (v) => (v * 0.12).toFixed(1) + "V", grabAxis: "x", springBack: false,
+    note: "上＝太い線／下＝細い線。同じ電圧で流れの差を見ろ。<br>細い線、電圧を上げるとうっすら赤く…（次回の伏線）",
+    legend: ['<span style="color:#7fe0ff">● 粒の数と速さ＝電流</span>', '<span style="color:#ff7a6e">■ 細い＝通りにくい（抵抗大）</span>'],
+    cards: [
+      "電流（でんりゅう）＝<b>流れる量</b>。<br>単位はA（アンペア）。",
+      "抵抗（ていこう）＝<b>通りにくさ</b>。<br>単位はΩ（オーム）。<br>細い・長い・材質で決まる。",
+      "式は1個だけ：<br><b>電流＝電圧 ÷ 抵抗</b><br>（オームの法則）"
+    ],
+    quiz: {
+      q: "同じ電圧で、抵抗が2倍になったら電流は？",
+      opts: ["2倍", "半分", "変わらない"], ans: 1,
+      exp: "電流＝電圧÷抵抗。割る数が2倍→答えは半分。"
+    }
+  },
+  {
+    id: "l4", tag: "L4", label: "発熱", title: "発熱＝電気のこすれ",
+    mission: {
+      no: "MISSION 04 ── 細い線に大電流",
+      q: "電流を2倍にした。<br>熱は？",
+      opts: ["2倍", "4倍", "変わらない"], ans: 1,
+      ansLine: "4倍（熱は電流×電流で効く。2×2＝4）"
+    },
+    sliderLabel: "電流", val: (v) => (v * 0.15).toFixed(1) + "A", grabAxis: "x", springBack: false,
+    note: "電流を上げろ。10Aで煙、13.5Aで…ジュッ。<br>これが「線の選定ミス」の正体。",
+    legend: ['<span style="color:#ff7a6e">■ 赤熱＝ジュール熱</span>', '<span style="color:#9fb4cb">～ 煙＝被覆が焦げてる</span>'],
+    cards: [
+      "電気が流れる＝<br>電子と原子が<em>こすれる</em>＝<b>熱</b>。",
+      "熱は<b>電流×電流</b>で効く。<br>2倍流すと4倍熱い。<br>（P＝I²R）",
+      "だから<b>太い線</b>を使う。<br>細い線に大電流＝<em>火事のもと</em>。<br>図面の線サイズは命に関わる。"
+    ],
+    quiz: {
+      q: "細い線に大電流を流し続けると？",
+      opts: ["特に何も起きない", "熱くなって最悪発火", "電気が速くなる"], ans: 1,
+      exp: "ジュール熱で被覆が溶け、発火につながる。電線の太さ選定が電気設計の基本。"
+    }
+  },
+  {
+    id: "l5", tag: "L5", label: "ヒューズ", title: "ショートとヒューズ",
+    mission: {
+      no: "MISSION 05 ── わざとショートさせる",
+      q: "ショート（短絡）した瞬間、<br>最初に死ぬ<b>べき</b>部品は？",
+      opts: ["モーター", "ヒューズ", "電池"], ans: 1,
+      ansLine: "ヒューズ（身代わりに切れて、回路全体を守る）"
+    },
+    sliderLabel: "負荷", val: (v) => (v * 0.1).toFixed(1) + "A", grabAxis: "x", springBack: false,
+    note: "まず普通に流す→<b>👆タップでショート発生</b>→何が守る？<br>ヒューズのガラス管の中に注目。",
+    legend: ['<span style="color:#ff5d4d">■ 赤いバー＝ショート（近道）</span>', '<span style="color:#ffe9a3">■ ガラス管＝ヒューズ</span>'],
+    cards: [
+      "ショート＝<em>近道</em>ができること。<br>抵抗ほぼゼロ→電流が<b>暴走</b>。",
+      "ヒューズ＝<b>わざと最初に切れる</b><br>身代わりの細い線。<br>安全は「壊れる順番」の設計。",
+      "ヒューズ選定も設計の仕事。<br>大きすぎ＝守れない。<br>小さすぎ＝すぐ切れて使えない。"
+    ],
+    quiz: {
+      q: "ヒューズの役目は？",
+      opts: ["電気を速くする", "わざと最初に切れて回路を守る", "電圧を上げる"], ans: 1,
+      exp: "過電流のとき身代わりに溶けて切れる（溶断）。だから交換できる場所に付ける。"
+    }
+  },
+  {
+    id: "l6", tag: "L6", label: "容量", title: "電源容量と配線サイズ",
+    mission: {
+      no: "MISSION 06 ── 20Aブレーカーの盤",
+      q: "いま18A使用中。<br>5Aの機器を足していい？",
+      opts: ["足していい", "やめとけ"], ans: 1,
+      ansLine: "やめとけ（18＋5＝23A＞20A。ブレーカーが落ちる）"
+    },
+    sliderLabel: "機器を足す", val: (v) => (v * 0.25).toFixed(0) + "A", grabAxis: "x", springBack: false,
+    note: "スライダーで機器をON：ランプ→モーター→ヒーター。<br>赤線＝ブレーカー20A。超えたら…バチン",
+    legend: ['<span style="color:#ffe9a3">■ ランプ2A</span>', '<span style="color:#7fe0ff">■ モーター5A</span>', '<span style="color:#ff7a6e">■ ヒーター9A</span>'],
+    cards: [
+      "機器の電流は<b>足し算</b>。<br>2A＋5A＋9A＝16A。",
+      "ブレーカー容量＝<br>道の太さの<b>限界</b>。<br>超えたら自動で落ちて守る。",
+      "<b>8割で黄色信号</b>。<br>余裕を残すのが設計。<br>（安全率の電気版）"
+    ],
+    quiz: {
+      q: "ブレーカーが落ちる理由は？",
+      opts: ["電気の使いすぎ（合計電流が容量オーバー）", "電圧が低すぎた", "スイッチの故障"], ans: 0,
+      exp: "合計電流が容量を超えると、配線が熱くなる前に自動で切って守ってくれる。"
+    }
+  }
+];
+
+const BOSS = [
+  { q: "電線の中を流れているのは？", opts: ["水みたいな液体", "電子（マイナスの粒）", "光"], ans: 1,
+    exp: "銅の中の自由電子が押されて流れる。それが電気。" },
+  { q: "電池を直列2本。電圧は？", opts: ["変わらない", "2倍（足し算）", "半分"], ans: 1,
+    exp: "直列は足し算。1.5V＋1.5V＝3V。" },
+  { q: "同じ電圧で抵抗が2倍。電流は？", opts: ["2倍", "半分", "4倍"], ans: 1,
+    exp: "オームの法則：電流＝電圧÷抵抗。" },
+  { q: "電流が2倍になると発熱は？", opts: ["2倍", "4倍（電流×電流）", "変わらない"], ans: 1,
+    exp: "ジュール熱はI²で効く。だから太い線を選ぶ。" },
+  { q: "ショートで最初に切れるべきは？", opts: ["モーター", "ヒューズ", "配線"], ans: 1,
+    exp: "ヒューズ＝身代わり。壊れる順番を設計するのが安全設計。" },
+  { q: "ブレーカーが落ちる理由は？", opts: ["合計電流が容量を超えた", "電圧の下がりすぎ", "気温が高い"], ans: 0,
+    exp: "容量オーバー→配線が熱くなる前に自動で切る。" },
+  { q: "回路の輪が1カ所切れると？", opts: ["全部止まる", "半分だけ動く", "逆流する"], ans: 0,
+    exp: "電気は輪っかが閉じてる時だけ流れる。" }
+];
+
+// ---------------- 進捗（localStorage） ----------------
+const STORE_KEY = "volt-forge-v1";
+let progress = { done: {}, streak: { week: "", n: 0 }, broken: 0 };
+try {
+  const raw = localStorage.getItem(STORE_KEY);
+  if (raw) progress = Object.assign(progress, JSON.parse(raw));
+} catch (e) {}
+function saveProgress() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) {}
+}
+function isoWeek(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = (t.getUTCDay() + 6) % 7;
+  t.setUTCDate(t.getUTCDate() - day + 3);
+  const firstThu = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  const fday = (firstThu.getUTCDay() + 6) % 7;
+  firstThu.setUTCDate(firstThu.getUTCDate() - fday + 3);
+  return t.getUTCFullYear() + "-W" + String(1 + Math.round((t - firstThu) / 6048e5)).padStart(2, "0");
+}
+function nextWeekOf(wkStr) {
+  const m = wkStr.match(/(\d+)-W(\d+)/);
+  if (!m) return "";
+  const d = new Date(Date.UTC(+m[1], 0, 4));
+  d.setUTCDate(d.getUTCDate() + (+m[2]) * 7);
+  return isoWeek(d);
+}
+function bumpStreak() {
+  const wk = isoWeek(new Date());
+  const s = progress.streak;
+  if (s.week === wk) return;
+  s.n = (s.week && nextWeekOf(s.week) === wk) ? s.n + 1 : 1;
+  s.week = wk;
+}
+
+// ---------------- 画面切りかえ ----------------
+const $ = (id) => document.getElementById(id);
+function showView(name) {
+  ["viewHome", "viewLesson", "viewBoss"].forEach((v) => $(v).classList.toggle("active", v === name));
+  window.scrollTo(0, 0);
+}
+function setPhase(name) {
+  ["phMission", "phExp", "phReveal", "phQuiz", "phClear"].forEach((p) => $(p).classList.toggle("active", p === name));
+  window.scrollTo(0, 0);
+}
+function vib(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+
+// ---------------- ホーム描画 ----------------
+function lessonState(i) {
+  const isBoss = i >= LESSONS.length;
+  const id = isBoss ? "l7" : LESSONS[i].id;
+  if (progress.done[id]) return "done";
+  if (!isBoss && LESSONS[i].alwaysOpen) return "now";
+  const prevDone = i === 0 ? true : (!isBoss ? !!progress.done[LESSONS[i - 1].id] : LESSONS.every((L) => progress.done[L.id]));
+  return prevDone ? "now" : "lock";
+}
+const PROG_KEYS = LESSONS.map((L) => L.id).concat(["l7"]);
+function renderHome() {
+  const wrap = $("nodes1");
+  wrap.innerHTML = "";
+  const labels = LESSONS.map((L) => L.label).concat(["ボス"]);
+  for (let i = 0; i < labels.length; i++) {
+    const st = lessonState(i);
+    const b = document.createElement("button");
+    b.className = "node " + st;
+    const face = i < LESSONS.length ? LESSONS[i].tag.replace("L", "") : "★";
+    b.innerHTML = '<div class="dot">' + (st === "done" ? "✓" : face) + '</div><div class="lbl">' + labels[i] + "</div>";
+    if (st !== "lock") b.addEventListener("click", () => (i < LESSONS.length ? openLesson(i) : openBoss()));
+    wrap.appendChild(b);
+  }
+  const count = PROG_KEYS.filter((k) => progress.done[k]).length;
+  $("progText").textContent = count + "/" + PROG_KEYS.length;
+  $("progFill").style.width = Math.round((count / PROG_KEYS.length) * 100) + "%";
+  const next = LESSONS.map((_, i) => i).find((i) => lessonState(i) === "now");
+  const btn = $("btnResume");
+  if (count === PROG_KEYS.length) {
+    btn.innerHTML = "🏆 第1章 全クリ！<small>ボス戦にもう一度挑める／第2章は次のアップデート</small>";
+    btn.onclick = openBoss;
+  } else if (next === undefined) {
+    btn.innerHTML = "▶ ボス戦へ<small>L7 章ボス戦（7問）</small>";
+    btn.onclick = openBoss;
+  } else {
+    const L = LESSONS[next];
+    btn.innerHTML = (count === 0 ? "▶ はじめる" : "▶ つづきから") + "<small>" + L.tag + " " + L.title + "</small>";
+    btn.onclick = () => openLesson(next);
+  }
+  const s = progress.streak;
+  $("streakLine").textContent = (s.n > 0 ? "🔥 " + s.n + "週れんぞく" : "🔥 今週から積み上げ開始") + "／飛ばした部品 " + (progress.broken || 0) + "個";
+}
+
+/* ================================================================
+   3Dリアル実験台（FORCE FORGE v1.3エンジン移植）
+================================================================ */
+const FLOOR_Y = -1.18;
+let ST = null;
+
+function brushedTexOf() {
+  const cv = document.createElement("canvas");
+  cv.width = 512; cv.height = 512;
+  const ctx = cv.getContext("2d");
+  ctx.fillStyle = "#9a9a9a"; ctx.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 2600; i++) {
+    const y = Math.random() * 512, x = Math.random() * 512;
+    const len = 30 + Math.random() * 220;
+    ctx.strokeStyle = Math.random() < 0.5
+      ? "rgba(255,255,255," + (0.03 + Math.random() * 0.06) + ")"
+      : "rgba(0,0,0," + (0.03 + Math.random() * 0.06) + ")";
+    ctx.lineWidth = 0.5 + Math.random();
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len, y + (Math.random() - 0.5) * 2); ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+function tableTexOf() {
+  const cv = document.createElement("canvas");
+  cv.width = 512; cv.height = 512;
+  const ctx = cv.getContext("2d");
+  ctx.fillStyle = "#767b83"; ctx.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 2600; i++) {
+    const g = 100 + Math.random() * 50 | 0;
+    ctx.fillStyle = "rgba(" + g + "," + (g + 2) + "," + (g + 6) + "," + (0.10 + Math.random() * 0.15) + ")";
+    ctx.fillRect(Math.random() * 512, Math.random() * 512, 1 + Math.random() * 3, 1 + Math.random() * 2);
+  }
+  for (let ix = 0; ix < 8; ix++) for (let iy = 0; iy < 8; iy++) {
+    const x = 32 + ix * 64, y = 32 + iy * 64;
+    ctx.fillStyle = "#101317";
+    ctx.beginPath(); ctx.arc(x, y, 13, 0, 6.29); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, 14.5, Math.PI * 0.7, Math.PI * 1.6); ctx.stroke();
+    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.beginPath(); ctx.arc(x, y, 14.5, Math.PI * 1.7, Math.PI * 2.55); ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(2, 1.5);
+  return tex;
+}
+
+function ensureStage() {
+  if (ST) { ST.resize(); return; }
+  const host = $("stage3d");
+  if (typeof THREE === "undefined") {
+    host.insertAdjacentHTML("beforeend", '<div style="color:#8fa6bd;font-size:12px;text-align:center;padding-top:100px">3D表示にはネット接続が必要です</div>');
+    ST = { fake: true, resize(){}, clearScene(){}, group: null };
+    return;
+  }
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  host.insertBefore(renderer.domElement, host.firstChild);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x14171d);
+  scene.fog = new THREE.Fog(0x14171d, 8, 16);
+  const camera = new THREE.PerspectiveCamera(33, 1, 0.1, 60);
+  camera.position.set(0, 0.9, 5.6);
+  camera.lookAt(0, -0.15, 0);
+
+  const texLoader = new THREE.TextureLoader();
+  const steelTex = {};
+  [["col", "assets/steel_col.jpg", true], ["rough", "assets/steel_rough.jpg", false], ["nrm", "assets/steel_nrm.jpg", false]].forEach((it) => {
+    texLoader.load(it[1], (t) => {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (it[2]) t.encoding = THREE.sRGBEncoding;
+      steelTex[it[0]] = t;
+    });
+  });
+
+  (function makeEnv() {
+    const es = new THREE.Scene();
+    const box = new THREE.BoxGeometry(1, 1, 1);
+    function panel(x, y, z, sx, sy, color) {
+      const m = new THREE.Mesh(box, new THREE.MeshBasicMaterial({ color }));
+      m.position.set(x, y, z); m.scale.set(sx, sy, 0.1); m.lookAt(0, 0, 0); es.add(m);
+    }
+    es.add(new THREE.Mesh(new THREE.SphereGeometry(20, 8, 8), new THREE.MeshBasicMaterial({ color: 0x14161a, side: THREE.BackSide })));
+    panel(0, 6, 1, 7, 3.5, 0xffffff);
+    panel(-6, 2, 2, 2, 4, 0x9fb4c8);
+    panel(6, 1.5, -1, 1.5, 4, 0xcdbfa8);
+    panel(0, 0.8, 6, 5, 2.2, 0x6f7a86);
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(es, 0.02).texture;
+  })();
+  try {
+    if (THREE.RGBELoader) {
+      new THREE.RGBELoader().load("assets/env.hdr", (hdr) => {
+        const pm = new THREE.PMREMGenerator(renderer);
+        scene.environment = pm.fromEquirectangular(hdr).texture;
+        hdr.dispose();
+        pm.dispose();
+      });
+    }
+  } catch (e) {}
+
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+  scene.add(new THREE.HemisphereLight(0xbfd0e0, 0x2b2620, 0.35));
+  const key = new THREE.DirectionalLight(0xfff4e6, 1.05);
+  key.position.set(3, 5, 2.5);
+  key.castShadow = true;
+  key.shadow.mapSize.set(isMobile ? 1024 : 2048, isMobile ? 1024 : 2048);
+  key.shadow.camera.left = -3.5; key.shadow.camera.right = 3.5;
+  key.shadow.camera.top = 3.5; key.shadow.camera.bottom = -3.5;
+  key.shadow.bias = -0.0004;
+  scene.add(key);
+  const rim = new THREE.PointLight(0x8fb8d8, 0.22, 16); rim.position.set(-3.4, 1.6, -2.6); scene.add(rim);
+
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const floor = new THREE.Mesh(
+    new THREE.BoxGeometry(7, 0.35, 5),
+    new THREE.MeshStandardMaterial({ map: tableTexOf(), metalness: 0.72, roughness: 0.5, envMapIntensity: 1.1 })
+  );
+  floor.material.bumpMap = floor.material.map;
+  floor.material.bumpScale = 0.03;
+  floor.position.y = FLOOR_Y - 0.175;
+  floor.receiveShadow = true;
+  floor.userData.keep = true;
+  group.add(floor);
+
+  const blobCv = document.createElement("canvas");
+  blobCv.width = 256; blobCv.height = 256;
+  (function () {
+    const c2 = blobCv.getContext("2d");
+    const g = c2.createRadialGradient(128, 128, 10, 128, 128, 125);
+    g.addColorStop(0, "rgba(0,0,0,0.55)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    c2.fillStyle = g;
+    c2.fillRect(0, 0, 256, 256);
+  })();
+  const blob = new THREE.Mesh(
+    new THREE.PlaneGeometry(4.4, 2.8),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(blobCv), transparent: true, opacity: 0.5, depthWrite: false })
+  );
+  blob.rotation.x = -Math.PI / 2;
+  blob.position.y = FLOOR_Y + 0.002;
+  blob.userData.keep = true;
+  group.add(blob);
+
+  const brush = brushedTexOf();
+
+  // ---- 操作（タップ＝操作／ドラッグ＝スライダー or 回転） ----
+  let rotY = -0.5, rotX = 0.12, dragging = false, touched = false, px = 0, py = 0;
+  let mode = "orbit", startX = 0, startY = 0, startLoad = 0, downTime = 0, movedPx = 0;
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  const el = renderer.domElement;
+
+  function hitProxy(e) {
+    const sc = ST.sceneApi;
+    if (!sc || !sc.proxy) return false;
+    const r = el.getBoundingClientRect();
+    ndc.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    ndc.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+    camera.updateMatrixWorld();
+    group.updateMatrixWorld(true);
+    ray.setFromCamera(ndc, camera);
+    const list = Array.isArray(sc.proxy) ? sc.proxy : [sc.proxy];
+    return ray.intersectObjects(list, false).length > 0;
+  }
+  el.addEventListener("pointerdown", (e) => {
+    touched = true;
+    if (ST.broken) { rebuildScene(); return; }
+    dragging = true; px = e.clientX; py = e.clientY;
+    downTime = performance.now(); movedPx = 0;
+    ST.springing = false;
+    if (hitProxy(e)) {
+      mode = "pull";
+      startX = e.clientX; startY = e.clientY;
+      startLoad = +$("loadRange").value;
+      el.style.cursor = "grabbing";
+    } else mode = "orbit";
+    try { el.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  el.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    movedPx += Math.abs(e.clientX - px) + Math.abs(e.clientY - py);
+    const sc = ST.sceneApi;
+    if (mode === "pull" && sc) {
+      let dv = 0;
+      if (sc.grabAxis === "x") dv = (e.clientX - startX) / Math.max(1, el.clientWidth) * 170;
+      else if (sc.grabAxis === "y") dv = (e.clientY - startY) / Math.max(1, el.clientHeight) * 220;
+      else dv = (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY)) / Math.max(1, el.clientWidth) * 150;
+      $("loadRange").value = Math.max(0, Math.min(100, startLoad + dv));
+      onLoadInput();
+    } else {
+      rotY += (e.clientX - px) * 0.011;
+      rotX = Math.max(-0.5, Math.min(0.95, rotX + (e.clientY - py) * 0.008));
+    }
+    px = e.clientX; py = e.clientY;
+  });
+  el.addEventListener("pointerup", () => {
+    if (!dragging) return;
+    dragging = false;
+    el.style.cursor = "grab";
+    const sc = ST.sceneApi;
+    if (mode === "pull" && sc) {
+      if (performance.now() - downTime < 220 && movedPx < 10 && sc.poke) sc.poke();
+      if (!ST.broken && sc.springBack) ST.springing = true;
+      mode = "orbit";
+    }
+  });
+  el.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    camera.position.z = Math.max(3.0, Math.min(8.5, camera.position.z + e.deltaY * 0.004));
+  }, { passive: false });
+
+  function resize() {
+    const w = host.clientWidth, h = host.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  ST = {
+    group, camera, brush, steel: steelTex,
+    sceneApi: null, broken: false, springing: false, timeScale: 1, shake: 0,
+    resize,
+    resetView() { rotY = -0.5; rotX = 0.12; touched = false; camera.position.z = 5.6; },
+    clearScene() {
+      for (let i = group.children.length - 1; i >= 0; i--) {
+        const c = group.children[i];
+        if (c.userData && c.userData.keep) continue;
+        group.remove(c);
+        c.traverse && c.traverse((o) => {
+          if (o.geometry) o.geometry.dispose();
+          if (o.material && o.material !== null) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { if (m.dispose) m.dispose(); });
+        });
+      }
+      ST.sceneApi = null; ST.broken = false; ST.springing = false; ST.timeScale = 1; ST.shake = 0;
+      $("stageChips").innerHTML = "";
+      setBoom(false, "");
+    },
+    breakFX(label) {
+      ST.broken = true; ST.timeScale = 0.18; ST.shake = 0.06;
+      progress.broken = (progress.broken || 0) + 1;
+      saveProgress();
+      vib([90, 40, 140]);
+      const flash = $("flash");
+      flash.style.transition = "none"; flash.style.opacity = 0.65;
+      requestAnimationFrame(() => { flash.style.transition = "opacity 0.45s"; flash.style.opacity = 0; });
+      setBoom(true, label || "パチン!!");
+    }
+  };
+
+  let last = performance.now();
+  function loop(now) {
+    requestAnimationFrame(loop);
+    let dt = Math.min(0.05, (now - last) / 1000); last = now;
+    ST.timeScale += (1 - ST.timeScale) * 0.03;
+    dt *= ST.timeScale;
+    if (!touched) rotY += 0.002;
+    group.rotation.y += (rotY - group.rotation.y) * 0.12;
+    group.rotation.x += (rotX - group.rotation.x) * 0.12;
+
+    if (ST.springing && !ST.broken) {
+      const v = +$("loadRange").value;
+      const nv = v * 0.85 - 1.2;
+      if (nv <= 0) { $("loadRange").value = 0; ST.springing = false; } else $("loadRange").value = nv;
+      onLoadInput();
+    }
+    const sc = ST.sceneApi;
+    if (sc && sc.tick) sc.tick(dt, now);
+
+    ST.shake = Math.max(0, ST.shake - dt * 0.14);
+    group.position.x = (Math.random() - 0.5) * ST.shake;
+    group.position.y = (Math.random() - 0.5) * ST.shake;
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(loop);
+}
+
+function setBoom(on, label) {
+  $("boom").className = on ? "boom show" : "boom";
+  if (label) $("boomText").textContent = label;
+}
+
+// ---- 共通部品メーカー ----
+function steelMaps(extra) {
+  const s = ST.steel;
+  const base = (s && s.col)
+    ? { color: 0xd8dde2, metalness: 0.9, roughness: 1.0,
+        map: s.col, roughnessMap: s.rough, normalMap: s.nrm,
+        normalScale: new THREE.Vector2(0.6, 0.6), envMapIntensity: 1.25 }
+    : { color: 0xb8c2cc, metalness: 0.85, roughness: 0.36,
+        roughnessMap: ST.brush, bumpMap: ST.brush, bumpScale: 0.012, envMapIntensity: 1.2 };
+  return Object.assign(base, extra || {});
+}
+function steelMatOf(extra) {
+  return new THREE.MeshStandardMaterial(steelMaps(extra));
+}
+function copperMat(extra) {
+  return steelMatOf(Object.assign({ color: 0xc08050, roughness: 0.55 }, extra || {}));
+}
+const tmpC2 = { c: null };
+function tc() { if (!tmpC2.c) tmpC2.c = new THREE.Color(); return tmpC2.c; }
+function rampColor(s, c) {
+  s = Math.max(0, Math.min(1, s));
+  c.setHSL(0.58 * (1 - s), 0.9, 0.5 + 0.12 * s);
+  return c;
+}
+function setExtraHTML(html) { $("extraCtrls").innerHTML = html || ""; }
+
+// 配線ループ（銅のチューブ）＋電子の流れ
+function wireLoop(pts, r, mat) {
+  const curve = new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(p[0], p[1], p[2])), true, "catmullrom", 0.2);
+  const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 110, r || 0.032, 10, true), mat || copperMat());
+  mesh.castShadow = true;
+  ST.group.add(mesh);
+  return { curve, mesh };
+}
+function makeFlow(curve, n, size) {
+  const geo = new THREE.BufferGeometry();
+  const posA = new Float32Array(n * 3);
+  geo.setAttribute("position", new THREE.BufferAttribute(posA, 3));
+  const mat = new THREE.PointsMaterial({ color: 0x8fe4ff, size: size || 0.06, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+  const pts = new THREE.Points(geo, mat);
+  ST.group.add(pts);
+  const st = [];
+  for (let i = 0; i < n; i++) st.push(Math.random());
+  return {
+    pts, mat,
+    tick(dt, speed) {
+      for (let i = 0; i < st.length; i++) {
+        st[i] = (st[i] + dt * speed) % 1;
+        const p = curve.getPointAt(st[i]);
+        posA[i * 3] = p.x; posA[i * 3 + 1] = p.y; posA[i * 3 + 2] = p.z;
+      }
+      geo.attributes.position.needsUpdate = true;
+    }
+  };
+}
+// 実験ボード（回路を組む板）
+function mkBoard() {
+  const b = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.08, 1.7),
+    new THREE.MeshStandardMaterial({ color: 0x2a3038, metalness: 0.3, roughness: 0.75 }));
+  b.position.y = -0.72;
+  b.castShadow = true; b.receiveShadow = true;
+  ST.group.add(b);
+  return b;
+}
+// 電池ボックス（セルを積める）
+function mkBattery(x, z, maxCells) {
+  const g = new THREE.Group();
+  const tray = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.66), steelMatOf({ color: 0x30363e }));
+  tray.castShadow = true;
+  g.add(tray);
+  const cells = [];
+  for (let i = 0; i < (maxCells || 4); i++) {
+    const cg = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.42, 20), steelMatOf({ color: 0x3d5a2e }));
+    body.castShadow = true;
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.05, 12), copperMat());
+    cap.position.y = 0.23;
+    cg.add(body); cg.add(cap);
+    cg.position.set(0, 0.26, -0.24 + i * 0.16);
+    cg.visible = i === 0;
+    g.add(cg);
+    cells.push(cg);
+  }
+  g.position.set(x, -0.68, z);
+  ST.group.add(g);
+  return { group: g, setCells(n) { cells.forEach((c, i) => (c.visible = i < Math.max(1, n))); } };
+}
+// ランプ（ガラス球＋フィラメント＋光）
+function mkLamp(x, z) {
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.16, 16), copperMat());
+  base.position.y = 0.08;
+  base.castShadow = true;
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0xcfe0ea, metalness: 0, roughness: 0.08, transparent: true, opacity: 0.28 });
+  const glass = new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 16), glassMat);
+  glass.position.y = 0.32;
+  const filMat = new THREE.MeshStandardMaterial({ color: 0x664a22, emissive: 0xffb045, emissiveIntensity: 0 });
+  const fil = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.012, 8, 20), filMat);
+  fil.position.y = 0.32;
+  fil.rotation.x = Math.PI / 2;
+  const light = new THREE.PointLight(0xffc070, 0, 5);
+  light.position.y = 0.34;
+  g.add(base); g.add(glass); g.add(fil); g.add(light);
+  g.position.set(x, -0.68, z);
+  ST.group.add(g);
+  let dead = false;
+  return {
+    group: g,
+    set(b) {
+      if (dead) b = 0;
+      filMat.emissiveIntensity = 3.2 * b;
+      light.intensity = 1.7 * b;
+    },
+    kill() { dead = true; fil.visible = false; glassMat.color.setHex(0x6a6f75); glassMat.opacity = 0.45; },
+    revive() { dead = false; fil.visible = true; glassMat.color.setHex(0xcfe0ea); glassMat.opacity = 0.28; },
+    isDead() { return dead; }
+  };
+}
+// スイッチ（レバー）
+function mkSwitch(x, z) {
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.12, 0.22), steelMatOf({ color: 0x39404a }));
+  base.position.y = 0.06;
+  base.castShadow = true;
+  const lever = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.09), copperMat({ color: 0xd8b060 }));
+  lever.position.y = 0.15;
+  lever.castShadow = true;
+  g.add(base); g.add(lever);
+  g.position.set(x, -0.68, z);
+  ST.group.add(g);
+  return { group: g, set(on) { lever.rotation.z = on ? 0 : 0.5; lever.position.y = on ? 0.14 : 0.19; } };
+}
+
+/* ================================================================
+   シーン builders（電気の実験台）
+================================================================ */
+
+/* ---------- L1：電気ってなに？（電池・スイッチ・ランプの輪） ---------- */
+function buildL1() {
+  mkBoard();
+  const loop = wireLoop([
+    [-1.15, -0.6, 0], [-1.0, -0.6, -0.42], [0, -0.6, -0.56], [1.0, -0.6, -0.42],
+    [1.15, -0.6, 0], [1.0, -0.6, 0.42], [0, -0.6, 0.56], [-1.0, -0.6, 0.42]
+  ], 0.032);
+  const flow = makeFlow(loop.curve, 70);
+  const bat = mkBattery(-1.15, 0, 4);
+  const sw = mkSwitch(0, 0.56);
+  const lamp = mkLamp(1.15, 0);
+
+  $("stageChips").innerHTML =
+    '<div class="chip" style="left:5%; top:58%">電池（ポンプ）</div>' +
+    '<div class="chip" style="left:42%; top:74%">スイッチ</div>' +
+    '<div class="chip" style="right:5%; top:48%">ランプ</div>';
+
+  const proxy = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.1, 1.9), new THREE.MeshBasicMaterial({ visible: false }));
+  proxy.position.y = -0.5;
+  ST.group.add(proxy);
+
+  let on = true, load = 0;
+  sw.set(true);
+  setExtraHTML('<div class="readout" id="l1read"></div>');
+  function refresh() {
+    const V = load * 12;
+    bat.setCells(Math.max(1, Math.ceil(V / 3)));
+    lamp.set(on ? Math.min(1, V / 6) : 0);
+    const r = $("l1read");
+    if (r) r.textContent = "スイッチ: " + (on ? "ON ⚡" : "OFF（輪が切れてる）") + " ／ 電圧 " + V.toFixed(1) + "V";
+  }
+  refresh();
+  ST.sceneApi = {
+    proxy, grabAxis: "x", springBack: false,
+    update(l) { load = l; refresh(); },
+    poke() { on = !on; sw.set(on); vib(15); refresh(); },
+    tick(dt) { flow.tick(dt, on ? load * 0.55 : 0); flow.mat.opacity = on && load > 0.02 ? 0.95 : 0.12; }
+  };
+}
+
+/* ---------- L2：電圧＝押す力（電池を積む・ランプ切れ） ---------- */
+function buildL2() {
+  mkBoard();
+  const loop = wireLoop([
+    [-1.15, -0.6, 0], [-1.0, -0.6, -0.42], [0, -0.6, -0.56], [1.0, -0.6, -0.42],
+    [1.15, -0.6, 0], [1.0, -0.6, 0.42], [0, -0.6, 0.56], [-1.0, -0.6, 0.42]
+  ], 0.032);
+  const flow = makeFlow(loop.curve, 70);
+  const bat = mkBattery(-1.15, 0, 4);
+  const lamp = mkLamp(1.15, 0);
+
+  const proxy = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.1, 1.9), new THREE.MeshBasicMaterial({ visible: false }));
+  proxy.position.y = -0.5;
+  ST.group.add(proxy);
+
+  setExtraHTML('<div class="readout" id="l2read"></div>');
+  let load = 0;
+  function refresh() {
+    const V = load * 12;
+    bat.setCells(Math.max(1, Math.ceil(V / 3)));
+    lamp.set(Math.min(1.25, V / 6));
+    const r = $("l2read");
+    if (r) r.textContent = "電圧 " + V.toFixed(1) + "V ／ ランプ定格 6V" + (V > 7 ? " ⚠️ かけすぎ" : "");
+    if (load >= 0.8 && !ST.broken) {
+      ST.breakFX("プチッ!! 玉が切れた（定格オーバー）");
+      lamp.kill();
+    }
+  }
+  refresh();
+  ST.sceneApi = {
+    proxy, grabAxis: "x", springBack: false,
+    update(l) { if (ST.broken) return; load = l; refresh(); },
+    tick(dt) { flow.tick(dt, ST.broken ? 0 : load * 0.55); flow.mat.opacity = !ST.broken && load > 0.02 ? 0.95 : 0.12; }
+  };
+}
+
+/* ---------- L3：電流と抵抗（太い線 vs 細い線） ---------- */
+function buildL3() {
+  mkBoard();
+  const mkHalf = (z, r, wireMat) => {
+    const loop = wireLoop([
+      [-1.15, -0.6, z], [-0.6, -0.6, z - 0.22], [0.6, -0.6, z - 0.22],
+      [1.15, -0.6, z], [0.6, -0.6, z + 0.22], [-0.6, -0.6, z + 0.22]
+    ], r, wireMat);
+    return loop;
+  };
+  const thick = mkHalf(-0.42, 0.05);
+  const thinMat = new THREE.MeshStandardMaterial(steelMaps({ color: 0x8a7f72, roughness: 0.7, emissive: 0xff3300, emissiveIntensity: 0 }));
+  const thin = mkHalf(0.42, 0.016, thinMat);
+  const batA = mkBattery(-1.5, -0.42, 2);
+  const batB = mkBattery(-1.5, 0.42, 2);
+  batA.setCells(2); batB.setCells(2);
+  const flowA = makeFlow(thick.curve, 55, 0.065);
+  const flowB = makeFlow(thin.curve, 25, 0.05);
+
+  $("stageChips").innerHTML =
+    '<div class="chip" style="left:8%; top:30%">太い＝ラクに流れる</div>' +
+    '<div class="chip red" style="left:8%; top:66%">細い＝抵抗 大</div>';
+
+  const proxy = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.0, 1.9), new THREE.MeshBasicMaterial({ visible: false }));
+  proxy.position.y = -0.55;
+  ST.group.add(proxy);
+
+  setExtraHTML('<div class="readout" id="l3read"></div>');
+  let load = 0;
+  function refresh() {
+    const V = load * 12;
+    const Ia = V / 2, Ib = V / 8;
+    const r = $("l3read");
+    if (r) r.innerHTML = "太い線: <b>" + Ia.toFixed(1) + "A</b> ／ 細い線: <b>" + Ib.toFixed(1) + "A</b>（同じ" + V.toFixed(1) + "V）";
+    thinMat.emissiveIntensity = Math.max(0, load - 0.55) * 0.9; // 伏線：細い線がうっすら赤く
+  }
+  refresh();
+  ST.sceneApi = {
+    proxy, grabAxis: "x", springBack: false,
+    update(l) { load = l; refresh(); },
+    tick(dt) {
+      flowA.tick(dt, load * 0.7);
+      flowB.tick(dt, load * 0.18);
+      flowA.mat.opacity = load > 0.02 ? 0.95 : 0.12;
+      flowB.mat.opacity = load > 0.02 ? 0.85 : 0.12;
+    }
+  };
+}
+
+/* ---------- L4：発熱（細い線が赤熱→焦げる） ---------- */
+function buildL4() {
+  mkBoard();
+  // 端子2本＋細いニクロム線
+  [-0.8, 0.8].forEach((x) => {
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.3, 14), copperMat({ color: 0xd8b060 }));
+    t.position.set(x, -0.53, 0);
+    t.castShadow = true;
+    ST.group.add(t);
+  });
+  const wireMat = new THREE.MeshStandardMaterial({ color: 0x6f665c, metalness: 0.6, roughness: 0.5, emissive: 0xff4400, emissiveIntensity: 0 });
+  const wireGeo = new THREE.CylinderGeometry(0.02, 0.02, 1.6, 12, 24);
+  const wire = new THREE.Mesh(wireGeo, wireMat);
+  wire.rotation.z = Math.PI / 2;
+  wire.position.set(0, -0.38, 0);
+  wire.castShadow = true;
+  ST.group.add(wire);
+  const wBase = wire.geometry.attributes.position.array.slice();
+  const heatLight = new THREE.PointLight(0xff7030, 0, 5);
+  heatLight.position.set(0, -0.2, 0);
+  ST.group.add(heatLight);
+
+  // 煙（上にのぼって消える粒）
+  const smokeN = 40;
+  const smokeGeo = new THREE.BufferGeometry();
+  const sPos = new Float32Array(smokeN * 3);
+  smokeGeo.setAttribute("position", new THREE.BufferAttribute(sPos, 3));
+  const smokeMat = new THREE.PointsMaterial({ color: 0x555a60, size: 0.09, transparent: true, opacity: 0, depthWrite: false });
+  const smoke = new THREE.Points(smokeGeo, smokeMat);
+  ST.group.add(smoke);
+  const sSt = [];
+  for (let i = 0; i < smokeN; i++) sSt.push({ t: Math.random(), x: (Math.random() - 0.5) * 1.4 });
+
+  const proxy = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 0.9), new THREE.MeshBasicMaterial({ visible: false }));
+  proxy.position.y = -0.38;
+  ST.group.add(proxy);
+
+  setExtraHTML('<div class="readout" id="l4read"></div>');
+  let load = 0;
+  function refresh() {
+    const I = load * 15;
+    const temp = 20 + I * I * 3;
+    wireMat.emissiveIntensity = Math.pow(load, 1.6) * 2.6;
+    heatLight.intensity = Math.pow(load, 1.8) * 1.6;
+    const r = $("l4read");
+    if (r) r.innerHTML = "電流 <b>" + I.toFixed(1) + "A</b> ／ 線の温度 約<b>" + Math.round(temp) + "℃</b>" + (temp > 300 ? " 🔥" : temp > 150 ? " ⚠️" : "");
+    if (load >= 0.9 && !ST.broken) {
+      ST.breakFX("ジュッ!! 線が焼き切れた");
+      wireMat.emissive.setHex(0x000000);
+      wireMat.color.setHex(0x1c1a18);
+      // 真ん中がたれて切れる
+      const a = wire.geometry.attributes.position.array;
+      for (let i = 0; i < a.length; i += 3) {
+        const yy = wBase[i + 1]; // チューブ軸方向
+        const sag = Math.max(0, 1 - Math.abs(yy) / 0.8) * 0.22;
+        a[i] = wBase[i] + sag; // 回転してるのでxが下方向
+      }
+      wire.geometry.attributes.position.needsUpdate = true;
+    }
+  }
+  refresh();
+  ST.sceneApi = {
+    proxy, grabAxis: "x", springBack: false,
+    update(l) { if (ST.broken) return; load = l; refresh(); },
+    tick(dt) {
+      const smoking = (load > 0.65 && !ST.broken) || (ST.broken);
+      smokeMat.opacity = smoking ? 0.45 : Math.max(0, smokeMat.opacity - dt);
+      for (let i = 0; i < sSt.length; i++) {
+        const s = sSt[i];
+        s.t += dt * (0.25 + load * 0.3);
+        if (s.t > 1) { s.t = 0; s.x = (Math.random() - 0.5) * 1.4; }
+        sPos[i * 3] = s.x + Math.sin(s.t * 9 + i) * 0.05;
+        sPos[i * 3 + 1] = -0.36 + s.t * 1.1;
+        sPos[i * 3 + 2] = 0;
+      }
+      smokeGeo.attributes.position.needsUpdate = true;
+      // 限界前のチリチリ
+      if (!ST.broken && load >= 0.75) {
+        wire.position.y = -0.38 + (Math.random() - 0.5) * 0.008;
+      }
+    }
+  };
+}
+
+/* ---------- L5：ショートとヒューズ ---------- */
+function buildL5() {
+  mkBoard();
+  const loop = wireLoop([
+    [-1.15, -0.6, 0], [-1.0, -0.6, -0.42], [-0.3, -0.6, -0.56], [0.5, -0.6, -0.56], [1.0, -0.6, -0.42],
+    [1.15, -0.6, 0], [1.0, -0.6, 0.42], [0, -0.6, 0.56], [-1.0, -0.6, 0.42]
+  ], 0.032);
+  const flow = makeFlow(loop.curve, 70);
+  const bat = mkBattery(-1.15, 0, 4);
+  bat.setCells(3);
+  // モーター（守られる側）
+  const motor = new THREE.Group();
+  const mBody = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.34, 20), steelMatOf({ color: 0x4a5560 }));
+  mBody.rotation.z = Math.PI / 2;
+  mBody.castShadow = true;
+  const fan = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.34, 0.06), copperMat({ color: 0xd8b060 }));
+  fan.position.x = 0.22;
+  motor.add(mBody); motor.add(fan);
+  motor.position.set(1.15, -0.5, 0);
+  ST.group.add(motor);
+  // ヒューズ（ガラス管＋中の細線）上辺に
+  const fuse = new THREE.Group();
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0xd8e6ee, metalness: 0, roughness: 0.06, transparent: true, opacity: 0.3 });
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.5, 16), glassMat);
+  tube.rotation.z = Math.PI / 2;
+  [-0.28, 0.28].forEach((dx) => {
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.09, 14), copperMat({ color: 0xd8b060 }));
+    cap.rotation.z = Math.PI / 2;
+    cap.position.x = dx;
+    fuse.add(cap);
+  });
+  const fwMat = new THREE.MeshStandardMaterial({ color: 0x9aa2aa, metalness: 0.7, roughness: 0.4, emissive: 0xff5500, emissiveIntensity: 0 });
+  const fw = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.46, 8), fwMat);
+  fw.rotation.z = Math.PI / 2;
+  fuse.add(tube); fuse.add(fw);
+  fuse.position.set(0.1, -0.6, -0.56);
+  ST.group.add(fuse);
+  // ショートバー（赤・タップで倒れて近道を作る）
+  const shortBar = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.55, 0.09),
+    new THREE.MeshStandardMaterial({ color: 0xb03028, metalness: 0.6, roughness: 0.4, emissive: 0x992211, emissiveIntensity: 0.25 }));
+  shortBar.position.set(-0.55, -0.42, 0);
+  shortBar.rotation.x = -0.9; // 浮いてる（未接触）
+  shortBar.castShadow = true;
+  ST.group.add(shortBar);
+
+  $("stageChips").innerHTML =
+    '<div class="chip" style="left:32%; top:24%">ヒューズ</div>' +
+    '<div class="chip red" style="left:22%; top:52%">👆ショートバー</div>' +
+    '<div class="chip" style="right:5%; top:46%">モーター</div>';
+
+  const proxy = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.2, 1.9), new THREE.MeshBasicMaterial({ visible: false }));
+  proxy.position.y = -0.45;
+  ST.group.add(proxy);
+
+  setExtraHTML('<div class="readout" id="l5read"></div>');
+  let load = 0.3, shortT = -1, fanA = 0;
+  $("loadRange").value = 30;
+  function readout(txt, warn) {
+    const r = $("l5read");
+    if (r) r.innerHTML = warn ? '<span style="color:#ff5d4d">' + txt + "</span>" : txt;
+  }
+  readout("電流 3.0A（正常）／ 👆タップでショート発生");
+  ST.sceneApi = {
+    proxy, grabAxis: "x", springBack: false,
+    update(l) { if (shortT >= 0 || ST.broken) return; load = l; readout("電流 " + (l * 10).toFixed(1) + "A（正常）／ 👆タップでショート発生"); },
+    poke() {
+      if (ST.broken || shortT >= 0) return;
+      shortT = 0;
+      shortBar.rotation.x = 0; // バーが倒れて接触＝近道完成
+      vib(30);
+    },
+    tick(dt, now) {
+      // ファン回転
+      const speed = ST.broken ? 0 : (shortT >= 0 ? 2 : load * 10);
+      fanA += dt * speed;
+      fan.rotation.x = fanA;
+      if (shortT >= 0 && !ST.broken) {
+        shortT += dt;
+        readout("⚡ ショート!! 電流 " + Math.round(30 + shortT * 120) + "A 暴走中…", true);
+        fwMat.emissiveIntensity = shortT * 6;
+        flow.tick(dt, 3.5);
+        if (shortT > 0.7) {
+          ST.breakFX("パチン!! ヒューズが身代わりに切れた");
+          fw.visible = false;
+          glassMat.opacity = 0.55;
+          glassMat.color.setHex(0x8a8f95);
+          readout("回路停止。モーターは無事 👍（ヒューズ交換＝画面タップ）");
+        }
+        return;
+      }
+      flow.tick(dt, ST.broken ? 0 : load * 0.5);
+      flow.mat.opacity = ST.broken ? 0.1 : 0.95;
+    }
+  };
+}
+
+/* ---------- L6：電源容量とブレーカー ---------- */
+function buildL6() {
+  mkBoard();
+  // 分電盤（後ろに立つ）
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.1, 0.14), steelMatOf({ color: 0x8a9098 }));
+  panel.position.set(-0.9, -0.1, -0.65);
+  panel.castShadow = true;
+  ST.group.add(panel);
+  // ブレーカー本体＋レバー
+  const brk = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.4, 0.12), steelMatOf({ color: 0x23282e }));
+  brk.position.set(-0.9, 0.05, -0.56);
+  ST.group.add(brk);
+  const lever = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.16, 0.1),
+    new THREE.MeshStandardMaterial({ color: 0xd8b040, metalness: 0.4, roughness: 0.5 }));
+  lever.position.set(-0.9, 0.12, -0.49);
+  ST.group.add(lever);
+
+  // 機器3つ：ランプ・モーター・ヒーター
+  const lamp = mkLamp(-0.55, 0.35);
+  const motor = new THREE.Group();
+  const mBody = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.32, 20), steelMatOf({ color: 0x4a5560 }));
+  mBody.rotation.z = Math.PI / 2;
+  mBody.castShadow = true;
+  const fan = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.3, 0.06), copperMat({ color: 0xd8b060 }));
+  fan.position.x = 0.2;
+  motor.add(mBody); motor.add(fan);
+  motor.position.set(0.35, -0.52, 0.3);
+  ST.group.add(motor);
+  const heaterMat = new THREE.MeshStandardMaterial({ color: 0x5a5148, metalness: 0.5, roughness: 0.55, emissive: 0xff4400, emissiveIntensity: 0 });
+  const heater = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.32, 0.2), heaterMat);
+  heater.position.set(1.2, -0.52, 0.25);
+  heater.castShadow = true;
+  ST.group.add(heater);
+  // 盤から機器へのケーブル
+  [[-0.55, 0.35], [0.35, 0.3], [1.2, 0.25]].forEach(([x, z]) => {
+    wireLoop([[-0.9, -0.66, -0.6], [(x - 0.9) / 2, -0.7, (z - 0.6) / 2], [x, -0.66, z]], 0.026);
+  });
+
+  $("stageChips").innerHTML =
+    '<div class="chip" style="left:8%; top:22%">ブレーカー20A</div>';
+
+  const proxy = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.3, 1.9), new THREE.MeshBasicMaterial({ visible: false }));
+  proxy.position.y = -0.4;
+  ST.group.add(proxy);
+
+  setExtraHTML(
+    '<div class="gauge"><div class="gfill" id="l6fill"></div><div class="gmark"></div></div>' +
+    '<div class="gcap"><span>0A</span><span style="color:#ff8f85">ブレーカー20A↑</span><span>25A</span></div>' +
+    '<div class="readout" id="l6read"></div>'
+  );
+  let load = 0, fanA = 0;
+  function refresh() {
+    const A = load * 25;
+    const lampOn = A >= 2, motorOn = A >= 7, heaterOn = A >= 16;
+    lamp.set(lampOn && !ST.broken ? 1 : 0);
+    heaterMat.emissiveIntensity = heaterOn && !ST.broken ? 0.9 : 0;
+    const f = $("l6fill"), r = $("l6read");
+    if (f) f.style.width = (A / 25 * 100) + "%";
+    if (r) {
+      const items = [lampOn ? "ランプ2A" : null, motorOn ? "モーター5A" : null, heaterOn ? "ヒーター9A＋α" : null].filter(Boolean).join("＋") || "全部OFF";
+      r.innerHTML = "合計 <b>" + A.toFixed(0) + "A</b> ／ " + items + (A > 16 && A <= 20 ? " ⚠️ 8割超え" : "");
+    }
+    if (A > 20 && !ST.broken) {
+      ST.breakFX("バチン!! ブレーカーが落ちた");
+      lever.position.y = 0.0;
+      lever.rotation.x = 0.5;
+      lamp.set(0);
+      heaterMat.emissiveIntensity = 0;
+    }
+  }
+  refresh();
+  ST.sceneApi = {
+    proxy, grabAxis: "x", springBack: false,
+    update(l) { if (ST.broken) return; load = l; refresh(); },
+    tick(dt) {
+      const A = load * 25;
+      fanA += dt * (!ST.broken && A >= 7 ? 9 : 0);
+      fan.rotation.x = fanA;
+    }
+  };
+}
+
+const BUILDERS = { l1: buildL1, l2: buildL2, l3: buildL3, l4: buildL4, l5: buildL5, l6: buildL6 };
+
+/* ================================================================
+   🔬 ミクロの目 ── 銅の原子格子＋自由電子
+================================================================ */
+const MICRO_LEGEND = '<span style="color:#7fe0ff">● 青い粒＝自由電子</span><span>球＝銅の原子</span><span>震え＝温度</span>';
+
+const MICRO = {
+  l1: {
+    n: 45, drift: (l) => l * 1.3, jig: () => 0.010,
+    note: "🔬 銅の中は<b>自由電子</b>がうようよ。<br>ふだんはランダム。電圧＝押す力がかかると、流れがそろう。"
+  },
+  l2: {
+    n: 45, drift: (l) => l * 2.2, jig: () => 0.010,
+    note: "🔬 電圧が上がる＝電子を押す力が強い。<br>流れが<b>速く</b>なる。それだけ。単純。"
+  },
+  l3: {
+    n: 50, drift: (l) => l * 1.2, jig: () => 0.010, twoLanes: true,
+    note: "🔬 上＝広い道（太い線）／下＝せまい道（細い線）。<br>せまい道は通れる量が少ない＝<b>抵抗が大きい</b>。"
+  },
+  l4: {
+    n: 45, drift: (l) => l * 1.5, jig: (l) => 0.008 + 0.045 * l,
+    note: "🔬 電子が原子に<b>ぶつかる</b>→原子が暴れる＝<b>熱</b>。<br>暴れるほどさらにぶつかる。この悪循環が発熱。"
+  },
+  l5: {
+    n: 45, drift: (l) => l * 2.6, jig: (l) => 0.008 + 0.05 * l, meltAt: 0.72,
+    note: "🔬 過電流→ぶつかりすぎて熱→ヒューズの結合が<b>溶けて切れる</b>（溶断）。<br>細いから最初に死ぬ＝身代わり。"
+  },
+  l6: {
+    n: 90, drift: (l) => l * 1.1, jig: (l) => 0.008 + 0.02 * l,
+    note: "🔬 容量＝道の<b>混みぐあい</b>。<br>混みすぎ＝熱＝危険。だからブレーカーが止める。"
+  }
+};
+
+function buildMicro(id) {
+  const cfg = MICRO[id];
+  const a = 0.26;
+  const dummy = new THREE.Object3D();
+  const atoms = [];
+  const blocks = cfg.twoLanes
+    ? [{ cols: 13, rows: 5, cy: 0.55 }, { cols: 13, rows: 2, cy: -0.75 }]
+    : [{ cols: 13, rows: 6, cy: 0 }];
+  blocks.forEach((B, bi) => {
+    for (let i = 0; i < B.cols; i++) for (let j = 0; j < B.rows; j++) for (let k = 0; k < 2; k++) {
+      atoms.push({
+        x: (i - (B.cols - 1) / 2) * a,
+        y: B.cy + (j - (B.rows - 1) / 2) * a,
+        z: (k - 0.5) * a,
+        ph: Math.random() * 6.283, bi
+      });
+    }
+  });
+  const atomMesh = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(0.082, 14, 10),
+    new THREE.MeshStandardMaterial({ color: 0xd8956a, metalness: 0.85, roughness: 0.35, envMapIntensity: 1.15 }),
+    atoms.length
+  );
+  atomMesh.castShadow = true;
+  ST.group.add(atomMesh);
+
+  // 自由電子（青い粒・格子のすき間を流れる）
+  const eN = cfg.n;
+  const eMesh = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(0.045, 10, 8),
+    new THREE.MeshStandardMaterial({ color: 0x8fe4ff, emissive: 0x2ea8ff, emissiveIntensity: 1.4, metalness: 0.1, roughness: 0.3 }),
+    eN
+  );
+  ST.group.add(eMesh);
+  const els = [];
+  for (let i = 0; i < eN; i++) {
+    const B = blocks[i % blocks.length];
+    const hh = (B.rows - 1) / 2 * a + 0.1;
+    els.push({
+      bi: i % blocks.length,
+      x: (Math.random() - 0.5) * 3.2,
+      y: B.cy + (Math.random() - 0.5) * hh * 2,
+      z: (Math.random() - 0.5) * 0.3,
+      wob: Math.random() * 6.283
+    });
+  }
+
+  const proxy = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.6, 1.0), new THREE.MeshBasicMaterial({ visible: false }));
+  ST.group.add(proxy);
+
+  let load = 0, melted = 0;
+  function step(dt, t) {
+    const jig = cfg.jig ? cfg.jig(load) : 0.01;
+    for (let i = 0; i < atoms.length; i++) {
+      const at = atoms[i];
+      // 溶断演出：ヒューズ（l5）は高負荷で原子がバラける
+      let mx = 0, my = 0;
+      if (cfg.meltAt && melted > 0) {
+        const centerBias = Math.max(0, 1 - Math.abs(at.x) / 1.2);
+        mx = (Math.random() - 0.5) * melted * 0.2 * centerBias;
+        my = -melted * 0.35 * centerBias * (0.5 + Math.random() * 0.5);
+      }
+      dummy.position.set(
+        at.x + Math.sin(t * 3.1 + at.ph) * jig + mx,
+        at.y + Math.cos(t * 2.7 + at.ph * 1.3) * jig + my,
+        at.z + Math.sin(t * 2.3 + at.ph * 2.1) * jig
+      );
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      atomMesh.setMatrixAt(i, dummy.matrix);
+    }
+    atomMesh.instanceMatrix.needsUpdate = true;
+
+    const drift = cfg.drift(load);
+    for (let i = 0; i < els.length; i++) {
+      const e = els[i];
+      const B = blocks[e.bi];
+      const laneSpeed = cfg.twoLanes && e.bi === 1 ? drift * 0.3 : drift;
+      e.x += (laneSpeed + Math.sin(t * 5 + e.wob) * 0.08) * dt * 1.6;
+      e.y += Math.cos(t * 4.2 + e.wob * 2) * dt * 0.25;
+      const hh = (B.rows - 1) / 2 * a + 0.08;
+      if (e.y > B.cy + hh) e.y = B.cy + hh;
+      if (e.y < B.cy - hh) e.y = B.cy - hh;
+      if (e.x > 1.75) e.x = -1.75;
+      dummy.position.set(e.x, e.y, e.z);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      eMesh.setMatrixAt(i, dummy.matrix);
+    }
+    eMesh.instanceMatrix.needsUpdate = true;
+
+    if (cfg.meltAt && load >= cfg.meltAt) {
+      melted = Math.min(1, melted + dt * 0.6);
+      if (melted === 1 && !ST.broken) vib(20);
+    } else if (load < 0.08) melted = 0;
+  }
+  step(0, 0);
+  ST.sceneApi = {
+    proxy, grabAxis: "x", springBack: false,
+    update(l) { load = l; },
+    tick(dt, now) { step(dt, now * 0.001); },
+    _melted() { return melted; }
+  };
+}
+
+// ミクロ⇔実験台の切りかえ
+let microOn = false;
+function setMicro(on) {
+  if (!ST || ST.fake || !cur) return;
+  microOn = on;
+  const keep = +$("loadRange").value;
+  ST.clearScene();
+  ST.resetView();
+  setExtraHTML("");
+  if (on) {
+    buildMicro(cur.id);
+    $("btnMicro").textContent = "🔭 実験台へもどる";
+    $("expNote").innerHTML = MICRO[cur.id].note;
+    $("expLegend").innerHTML = MICRO_LEGEND;
+  } else {
+    BUILDERS[cur.id]();
+    $("btnMicro").textContent = "🔬 ミクロの目（電子で見る）";
+    $("expNote").innerHTML = cur.note;
+    $("expLegend").innerHTML = cur.legend.map((x) => "<span>" + x + "</span>").join("");
+  }
+  $("loadRange").value = keep;
+  onLoadInput();
+}
+
+/* ================================================================
+   レッスンの流れ
+================================================================ */
+let curIdx = 0, cur = null, missionPick = -1, cardIdx = 0;
+
+function openLesson(i) {
+  curIdx = i;
+  cur = LESSONS[i];
+  missionPick = -1;
+  showView("viewLesson");
+  $("lsTag").textContent = cur.tag;
+  $("lsTitle").textContent = cur.title;
+  $("msNo").innerHTML = cur.mission.no;
+  $("msQ").innerHTML = cur.mission.q;
+  const wrap = $("msOpts");
+  wrap.innerHTML = "";
+  cur.mission.opts.forEach((o, idx) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.textContent = (idx + 1) + ". " + o;
+    b.addEventListener("click", () => { missionPick = idx; startExp(); });
+    wrap.appendChild(b);
+  });
+  setPhase("phMission");
+}
+
+function rebuildScene() {
+  if (!ST || ST.fake) return;
+  ST.clearScene();
+  $("loadRange").value = 0;
+  $("loadVal").textContent = cur.val(0);
+  setExtraHTML("");
+  if (microOn) {
+    buildMicro(cur.id);
+    $("expNote").innerHTML = MICRO[cur.id].note;
+  } else {
+    BUILDERS[cur.id]();
+    $("expNote").innerHTML = cur.note;
+  }
+  onLoadInput();
+}
+
+function startExp() {
+  setPhase("phExp");
+  $("guessLine").textContent = "きみの予想：「" + cur.mission.opts[missionPick] + "」── 実験で確かめよう";
+  $("sliderLabel").textContent = cur.sliderLabel;
+  $("expLegend").innerHTML = cur.legend.map((x) => "<span>" + x + "</span>").join("");
+  $("expNote").innerHTML = cur.note;
+  setExtraHTML("");
+  $("loadRange").value = 0;
+  $("loadVal").textContent = cur.val(0);
+  const btn = $("btnToReveal");
+  btn.disabled = true;
+  microOn = false;
+  $("btnMicro").textContent = "🔬 ミクロの目（電子で見る）";
+  ensureStage();
+  if (ST.fake) { btn.disabled = false; return; }
+  ST.clearScene();
+  ST.resetView();
+  BUILDERS[cur.id]();
+  ST.resize();
+}
+$("btnMicro").addEventListener("click", () => setMicro(!microOn));
+
+function onLoadInput() {
+  const v = +$("loadRange").value;
+  $("loadVal").textContent = cur ? cur.val(v) : v;
+  if (ST && !ST.fake && ST.sceneApi) ST.sceneApi.update(v / 100);
+  $("btnToReveal").disabled = false;
+}
+$("loadRange").addEventListener("input", onLoadInput);
+
+$("btnToReveal").addEventListener("click", () => {
+  const m = cur.mission;
+  const hit = missionPick === m.ans;
+  $("rvBanner").innerHTML = (hit ? "🎯 予想的中！" : "💡 実験で見えたね！") + "<small>こたえ：" + m.ansLine + "</small>";
+  cardIdx = 0;
+  renderCard();
+  setPhase("phReveal");
+});
+
+function renderCard() {
+  $("rvCard").innerHTML = "<div>" + cur.cards[cardIdx] + "</div>";
+  $("rvDots").innerHTML = cur.cards.map((_, i) => (i <= cardIdx ? "<span>●</span>" : "○")).join("");
+  $("btnCardNext").textContent = cardIdx < cur.cards.length - 1 ? "つぎ →" : "ミニクイズへ →";
+}
+$("btnCardNext").addEventListener("click", () => {
+  if (cardIdx < cur.cards.length - 1) { cardIdx++; renderCard(); }
+  else startQuiz();
+});
+
+function startQuiz() {
+  setPhase("phQuiz");
+  const qz = cur.quiz;
+  $("qzQ").textContent = qz.q;
+  $("qzExp").style.display = "none";
+  $("btnQuizDone").style.display = "none";
+  const wrap = $("qzOpts");
+  wrap.innerHTML = "";
+  let answered = false;
+  qz.opts.forEach((o, idx) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.textContent = (idx + 1) + ". " + o;
+    b.addEventListener("click", () => {
+      if (answered) return;
+      answered = true;
+      wrap.querySelectorAll(".opt").forEach((x, xi) => {
+        if (xi === qz.ans) x.classList.add("correct");
+        else if (xi === idx) x.classList.add("wrong");
+        else x.classList.add("dim");
+      });
+      $("qzExp").innerHTML = qz.exp;
+      $("qzExp").style.display = "block";
+      $("btnQuizDone").style.display = "block";
+    });
+    wrap.appendChild(b);
+  });
+}
+
+$("btnQuizDone").addEventListener("click", () => {
+  progress.done[cur.id] = true;
+  bumpStreak();
+  saveProgress();
+  $("clearStamp").innerHTML = cur.tag + " CLEAR!<small>今朝の15分 完了</small>";
+  const s = progress.streak;
+  $("clearMsg").innerHTML = "🔥 " + s.n + "週れんぞく<br>" + (curIdx < LESSONS.length - 1 ? "次回：" + LESSONS[curIdx + 1].tag + " " + LESSONS[curIdx + 1].title : "次回：章ボス戦！");
+  setPhase("phClear");
+});
+
+$("btnGoHome").addEventListener("click", () => { renderHome(); showView("viewHome"); });
+$("btnBack").addEventListener("click", () => { renderHome(); showView("viewHome"); });
+
+/* ================================================================
+   ボス戦（7問）
+================================================================ */
+let bIdx = 0, bScore = 0;
+function openBoss() {
+  bIdx = 0; bScore = 0;
+  showView("viewBoss");
+  $("bossPlay").style.display = "block";
+  $("bossResult").style.display = "none";
+  renderBossQ();
+}
+function renderBossQ() {
+  const q = BOSS[bIdx];
+  $("bsProgress").textContent = "第" + (bIdx + 1) + "問 ／ 7問中 ── 正解 " + bScore;
+  $("bsQ").textContent = q.q;
+  $("bsExp").style.display = "none";
+  $("btnBossNext").style.display = "none";
+  const wrap = $("bsOpts");
+  wrap.innerHTML = "";
+  let answered = false;
+  q.opts.forEach((o, idx) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.textContent = (idx + 1) + ". " + o;
+    b.addEventListener("click", () => {
+      if (answered) return;
+      answered = true;
+      if (idx === q.ans) bScore++;
+      wrap.querySelectorAll(".opt").forEach((x, xi) => {
+        if (xi === q.ans) x.classList.add("correct");
+        else if (xi === idx) x.classList.add("wrong");
+        else x.classList.add("dim");
+      });
+      $("bsExp").innerHTML = q.exp;
+      $("bsExp").style.display = "block";
+      $("btnBossNext").style.display = "block";
+      $("btnBossNext").textContent = bIdx < BOSS.length - 1 ? "つぎ →" : "結果を見る →";
+    });
+    wrap.appendChild(b);
+  });
+}
+$("btnBossNext").addEventListener("click", () => {
+  if (bIdx < BOSS.length - 1) { bIdx++; renderBossQ(); }
+  else {
+    $("bossPlay").style.display = "none";
+    $("bossResult").style.display = "block";
+    $("bsScore").textContent = bScore + " / 7";
+    if (bScore >= 5) {
+      progress.done["l7"] = true;
+      bumpStreak();
+      saveProgress();
+      $("bsMsg").innerHTML = "🏆 第1章 制覇！<br>第2章「制御盤へ」は次のアップデートで配信。<br>それまで週1でボス戦の復習もアリ。";
+    } else {
+      $("bsMsg").innerHTML = "あと少し！ 5問正解でクリア。<br>まちがえたレッスンを触り直してから再挑戦。";
+    }
+  }
+});
+$("btnBossHome").addEventListener("click", () => { renderHome(); showView("viewHome"); });
+$("btnBackB").addEventListener("click", () => { renderHome(); showView("viewHome"); });
+
+/* ================================================================
+   起動
+================================================================ */
+renderHome();
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

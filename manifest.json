@@ -1,0 +1,19 @@
+{
+  "name": "VOLT FORGE ── 電気×設計 朝15分道場",
+  "short_name": "VOLT FORGE",
+  "description": "触って流して覚える、電気設計の3D教科書",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#04070c",
+  "theme_color": "#070a10",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
