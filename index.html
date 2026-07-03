@@ -15,12 +15,46 @@
     background:
       radial-gradient(ellipse 70% 40% at 20% 0%, rgba(255,214,79,0.06), transparent),
       radial-gradient(ellipse 60% 40% at 85% 100%, rgba(79,209,255,0.07), transparent),
-      #04070c;
+      #05090b;
     color: #dfe9f5;
     font-family: "Yu Gothic UI", "Hiragino Sans", "Meiryo", system-ui, sans-serif;
     overscroll-behavior-y: contain;
   }
-  #app { max-width: 470px; margin: 0 auto; padding: 18px 16px 40px; min-height: 100%; }
+  #bgfx { /* 光る回路基板（背景で光のパルスが走る） */
+    position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  #app { position: relative; z-index: 1; max-width: 470px; margin: 0 auto; padding: 18px 16px 40px; min-height: 100%; }
+
+  /* 章ゴールバナー */
+  .goalbanner {
+    margin-top: 14px; padding: 10px 13px; border-radius: 12px; text-align: center;
+    border: 1px solid rgba(255,214,79,0.45); background: rgba(255,214,79,0.06);
+    font-size: 12.5px; font-weight: 800; color: #ffe9a3;
+  }
+  /* 発明メーター（ロボット充電） */
+  .invmeter {
+    margin-top: 12px; padding: 12px 14px; border-radius: 14px;
+    border: 1px solid #1d2c42; background: linear-gradient(165deg, #0c1420, #0a0f18);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .invmeter svg { flex: none; filter: drop-shadow(0 0 8px rgba(79,209,255,0.35)); }
+  .invmeter .txt { font-size: 12.5px; color: #9fb4cb; line-height: 1.7; }
+  .invmeter .txt b { color: #ffe9a3; font-size: 14px; }
+  .invmeter .bar { margin-top: 6px; height: 8px; border-radius: 5px; background: #101825; overflow: hidden; }
+  .invmeter .bar div { height: 100%; width: 0%; background: linear-gradient(90deg, #4fd1ff, #ffd64f); transition: width 0.8s; }
+
+  /* 種明かし中の3D（小さく生きたまま） */
+  #stageWrap { display: none; }
+  #stageWrap.mini .stage3d { height: 30vh; max-height: 230px; min-height: 180px; }
+
+  /* クリア画面の「作れるもの」 */
+  .teaser {
+    margin-top: 16px; padding: 13px 15px; border-radius: 13px; text-align: left;
+    border: 1px solid rgba(79,209,255,0.45); background: rgba(79,209,255,0.06);
+    font-size: 14px; color: #cfe8f8; line-height: 1.75;
+  }
+  .teaser b { color: #7fe0ff; }
   .view { display: none; }
   .view.active { display: block; }
   .phase { display: none; }
@@ -194,6 +228,7 @@
 </style>
 </head>
 <body>
+<canvas id="bgfx"></canvas>
 <div id="app">
 
   <!-- ============ ホーム ============ -->
@@ -201,13 +236,43 @@
     <div class="home-logo">VOLT FORGE</div>
     <div class="home-sub">電気×設計 ── 朝15分・触って流して覚える道場</div>
     <button class="resume" id="btnResume"></button>
+    <div class="goalbanner">🎯 ゴール：自分の機械を配線できる設計者になる</div>
+    <div class="invmeter">
+      <svg width="64" height="84" viewBox="0 0 64 84">
+        <defs>
+          <linearGradient id="chg" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="#4fd1ff"/><stop offset="1" stop-color="#ffd64f"/>
+          </linearGradient>
+          <clipPath id="fillclip"><rect id="fillRect" x="0" y="84" width="64" height="0"/></clipPath>
+          <g id="robo">
+            <rect x="18" y="6" width="28" height="22" rx="6"/>
+            <circle cx="27" cy="17" r="3.5"/><circle cx="37" cy="17" r="3.5"/>
+            <line x1="32" y1="6" x2="32" y2="0" stroke-width="3"/>
+            <circle cx="32" cy="0" r="2.5"/>
+            <rect x="14" y="32" width="36" height="30" rx="7"/>
+            <rect x="4" y="34" width="8" height="20" rx="4"/>
+            <rect x="52" y="34" width="8" height="20" rx="4"/>
+            <rect x="18" y="66" width="10" height="16" rx="4"/>
+            <rect x="36" y="66" width="10" height="16" rx="4"/>
+            <path d="M30 38 L36 46 h-5 l3 8 -8 -10 h5 z"/>
+          </g>
+        </defs>
+        <use href="#robo" fill="#1c2836" stroke="#2a3c56" stroke-width="1"/>
+        <g clip-path="url(#fillclip)"><use href="#robo" fill="url(#chg)"/></g>
+      </svg>
+      <div class="txt">
+        <b id="invTitle">発明チャージ 0%</b><br>
+        <span id="invLine">学ぶほどロボットに電気がたまる</span>
+        <div class="bar"><div id="invBar"></div></div>
+      </div>
+    </div>
     <div class="prog-row"><span id="progText"></span><div class="prog-bar"><div class="prog-fill" id="progFill"></div></div><span>クリア</span></div>
     <div class="chap-title">第1章 電気を見る <span>（電気のきそ・全6回＋ボス）</span></div>
     <div class="nodes" id="nodes1"></div>
     <div class="chap2">🔒 第2章 制御盤へ（リレー・シーケンス・センサー）<br>第1章クリアで解放（次のアップデートで配信）</div>
     <div class="streak" id="streakLine"></div>
     <div class="installhint">スマホ：ブラウザの共有メニュー →「ホーム画面に追加」でアプリになる</div>
-    <div class="verline">VOLT FORGE v1.0 ─ 第1章（FORCE FORGEの兄弟）</div>
+    <div class="verline">VOLT FORGE v1.1 ─ 第1章（回路基板の背景＋発明メーター＋カード実演）</div>
   </section>
 
   <!-- ============ レッスン ============ -->
@@ -226,14 +291,17 @@
       <div class="mhint">↑ 予想してタップ（外れてもOK。実験で確かめる）</div>
     </div>
 
-    <div id="phExp" class="phase">
-      <div class="guessline" id="guessLine"></div>
+    <div id="stageWrap">
       <div class="stage3d" id="stage3d">
         <div id="stageChips"></div>
         <div class="hint3d" id="hint3d">👆 タップ＝操作／ドラッグ＝回転</div>
         <div class="flash" id="flash"></div>
         <div class="boom" id="boom"><span class="b1" id="boomText">パチン!!</span><span class="b2">🔧 画面タップで部品交換</span></div>
       </div>
+    </div>
+
+    <div id="phExp" class="phase">
+      <div class="guessline" id="guessLine"></div>
       <div class="legend" id="expLegend"></div>
       <div class="sliderrow"><span id="sliderLabel"></span><input type="range" id="loadRange" min="0" max="100" value="0"><span class="val" id="loadVal">0</span></div>
       <div class="extra" id="extraCtrls"></div>
@@ -259,6 +327,7 @@
 
     <div id="phClear" class="phase center">
       <div class="stamp" id="clearStamp"></div>
+      <div class="teaser" id="teaserBox"></div>
       <div class="clearmsg" id="clearMsg"></div>
       <button class="cta" id="btnGoHome">マップへもどる</button>
     </div>
@@ -292,6 +361,95 @@
 "use strict";
 
 /* ================================================================
+   背景：光る回路基板（銅の配線＋走る光パルス）
+================================================================ */
+(function bgFX() {
+  const cv = document.getElementById("bgfx");
+  if (!cv) return;
+  const ctx = cv.getContext("2d");
+  let W = 0, H = 0, traces = [];
+  function build() {
+    W = cv.width = Math.floor(innerWidth * Math.min(1.5, devicePixelRatio || 1));
+    H = cv.height = Math.floor(innerHeight * Math.min(1.5, devicePixelRatio || 1));
+    traces = [];
+    const n = Math.max(7, Math.floor(W / 95));
+    for (let i = 0; i < n; i++) {
+      const pts = [];
+      let x = (i + 0.2 + Math.random() * 0.6) * (W / n), y = -20;
+      pts.push([x, y]);
+      while (y < H + 20) {
+        if (Math.random() < 0.42) { // 45°ジョグ（基板配線の折れ）
+          const dir = Math.random() < 0.5 ? 1 : -1;
+          const j = 26 + Math.random() * 70;
+          x += dir * j; y += j;
+        } else {
+          y += 60 + Math.random() * 170;
+        }
+        pts.push([x, y]);
+      }
+      let len = 0;
+      const segs = [];
+      for (let k = 1; k < pts.length; k++) {
+        const dx = pts[k][0] - pts[k - 1][0], dy = pts[k][1] - pts[k - 1][1];
+        const l = Math.hypot(dx, dy);
+        segs.push({ x1: pts[k - 1][0], y1: pts[k - 1][1], dx, dy, l, acc: len });
+        len += l;
+      }
+      const pulses = [{ t: Math.random(), sp: 0.05 + Math.random() * 0.09, col: Math.random() < 0.25 ? "255,214,79" : "110,220,255" }];
+      if (Math.random() < 0.5) pulses.push({ t: Math.random(), sp: 0.04 + Math.random() * 0.08, col: "110,220,255" });
+      traces.push({ pts, segs, len, pulses });
+    }
+  }
+  build();
+  window.addEventListener("resize", build);
+  function pointAt(tr, d) {
+    for (let i = 0; i < tr.segs.length; i++) {
+      const s = tr.segs[i];
+      if (d <= s.acc + s.l) {
+        const f = (d - s.acc) / s.l;
+        return [s.x1 + s.dx * f, s.y1 + s.dy * f];
+      }
+    }
+    const s = tr.segs[tr.segs.length - 1];
+    return [s.x1 + s.dx, s.y1 + s.dy];
+  }
+  let last = performance.now();
+  (function draw(now) {
+    requestAnimationFrame(draw);
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(190,120,64,0.15)";
+    ctx.fillStyle = "rgba(190,120,64,0.18)";
+    for (const tr of traces) {
+      ctx.beginPath();
+      ctx.moveTo(tr.pts[0][0], tr.pts[0][1]);
+      for (let k = 1; k < tr.pts.length; k++) ctx.lineTo(tr.pts[k][0], tr.pts[k][1]);
+      ctx.stroke();
+      for (let k = 1; k < tr.pts.length - 1; k++) {
+        ctx.beginPath();
+        ctx.arc(tr.pts[k][0], tr.pts[k][1], 3.4, 0, 6.29);
+        ctx.fill();
+      }
+    }
+    for (const tr of traces) for (const p of tr.pulses) {
+      p.t += dt * p.sp;
+      if (p.t > 1) p.t = 0;
+      const xy = pointAt(tr, p.t * tr.len);
+      const g = ctx.createRadialGradient(xy[0], xy[1], 0, xy[0], xy[1], 24);
+      g.addColorStop(0, "rgba(" + p.col + ",0.65)");
+      g.addColorStop(1, "rgba(" + p.col + ",0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(xy[0], xy[1], 24, 0, 6.29); ctx.fill();
+      ctx.fillStyle = "rgba(235,250,255,0.9)";
+      ctx.beginPath(); ctx.arc(xy[0], xy[1], 2.4, 0, 6.29); ctx.fill();
+      ctx.fillStyle = "rgba(190,120,64,0.18)";
+    }
+  })(last);
+})();
+
+/* ================================================================
    VOLT FORGE v1.0 ── 第1章「電気を見る」
    FORCE FORGEの兄弟。合体型（マップ×ミッション）＋リアル実験台
    ＋電子の流れ＋ミクロの目（銅の原子と自由電子）
@@ -319,7 +477,13 @@ const LESSONS = [
       q: "回路の輪っかが1カ所切れたら？",
       opts: ["半分だけ流れる", "全部止まる", "逆に流れる"], ans: 1,
       exp: "電気は輪っかがつながってる時だけ流れる。スイッチはわざと切る場所。"
-    }
+    },
+    teaser: "配線図が「電子の道」として読める→<b>自作機械の配線デビュー</b>の第一歩",
+    fx: [
+      { load: 55, cam: { ry: -0.15, rx: 0.55, z: 4.3 } },
+      { load: 55, cam: { ry: 0.75, rx: 0.2, z: 4.2 } },
+      { load: 55, act: "poke", cam: { ry: -0.55, rx: 0.35, z: 4.4 } }
+    ]
   },
   {
     id: "l2", tag: "L2", label: "電圧", title: "電圧＝押す力",
@@ -341,7 +505,13 @@ const LESSONS = [
       q: "電圧の単位は？",
       opts: ["A（アンペア）", "V（ボルト）", "Ω（オーム）"], ans: 1,
       exp: "電圧＝V。電流＝A。抵抗＝Ω。この3つが電気の主役。"
-    }
+    },
+    teaser: "電池・電源が選べる→<b>ロボットの心臓（電源設計）</b>がわかる",
+    fx: [
+      { load: 30, cam: { ry: -0.4, rx: 0.2, z: 4.4 } },
+      { load: 60, cam: { ry: 0.75, rx: 0.2, z: 4.0 } },
+      { load: 74, cam: { ry: -0.85, rx: 0.15, z: 3.9 } }
+    ]
   },
   {
     id: "l3", tag: "L3", label: "オーム", title: "電流と抵抗（オームの法則）",
@@ -363,7 +533,13 @@ const LESSONS = [
       q: "同じ電圧で、抵抗が2倍になったら電流は？",
       opts: ["2倍", "半分", "変わらない"], ans: 1,
       exp: "電流＝電圧÷抵抗。割る数が2倍→答えは半分。"
-    }
+    },
+    teaser: "抵抗の計算ができる→<b>LED・センサーの電子工作</b>デビュー",
+    fx: [
+      { load: 60, cam: { ry: -0.3, rx: 0.5, z: 4.2 } },
+      { load: 60, cam: { ry: -0.3, rx: 0.78, z: 3.9 } },
+      { load: 90, cam: { ry: -0.3, rx: 0.5, z: 4.4 } }
+    ]
   },
   {
     id: "l4", tag: "L4", label: "発熱", title: "発熱＝電気のこすれ",
@@ -385,7 +561,13 @@ const LESSONS = [
       q: "細い線に大電流を流し続けると？",
       opts: ["特に何も起きない", "熱くなって最悪発火", "電気が速くなる"], ans: 1,
       exp: "ジュール熱で被覆が溶け、発火につながる。電線の太さ選定が電気設計の基本。"
-    }
+    },
+    teaser: "電線の太さが選べる→<b>燃えない機械</b>が設計できる",
+    fx: [
+      { load: 45, cam: { ry: -0.4, rx: 0.25, z: 4.0 } },
+      { load: 70, cam: { ry: -0.4, rx: 0.3, z: 3.7 } },
+      { load: 25, cam: { ry: -0.4, rx: 0.25, z: 4.3 } }
+    ]
   },
   {
     id: "l5", tag: "L5", label: "ヒューズ", title: "ショートとヒューズ",
@@ -407,7 +589,13 @@ const LESSONS = [
       q: "ヒューズの役目は？",
       opts: ["電気を速くする", "わざと最初に切れて回路を守る", "電圧を上げる"], ans: 1,
       exp: "過電流のとき身代わりに溶けて切れる（溶断）。だから交換できる場所に付ける。"
-    }
+    },
+    teaser: "保護回路が入れられる→<b>自作ロボットを火事から守れる</b>",
+    fx: [
+      { load: 30, cam: { ry: 0.5, rx: 0.3, z: 4.1 } },
+      { act: "poke", cam: { ry: -0.2, rx: 0.35, z: 3.9 } },
+      { act: "reset", load: 30, cam: { ry: -0.2, rx: 0.3, z: 4.4 } }
+    ]
   },
   {
     id: "l6", tag: "L6", label: "容量", title: "電源容量と配線サイズ",
@@ -429,7 +617,13 @@ const LESSONS = [
       q: "ブレーカーが落ちる理由は？",
       opts: ["電気の使いすぎ（合計電流が容量オーバー）", "電圧が低すぎた", "スイッチの故障"], ans: 0,
       exp: "合計電流が容量を超えると、配線が熱くなる前に自動で切って守ってくれる。"
-    }
+    },
+    teaser: "容量計算ができる→<b>制御盤の設計デビュー</b>",
+    fx: [
+      { load: 60, cam: { ry: -0.3, rx: 0.3, z: 4.2 } },
+      { load: 78, cam: { ry: 0.6, rx: 0.25, z: 4.0 } },
+      { load: 64, cam: { ry: -0.3, rx: 0.3, z: 4.3 } }
+    ]
   }
 ];
 
@@ -492,6 +686,12 @@ function showView(name) {
 }
 function setPhase(name) {
   ["phMission", "phExp", "phReveal", "phQuiz", "phClear"].forEach((p) => $(p).classList.toggle("active", p === name));
+  // 3Dは実験中フルサイズ／種明かし中は小さく生きたまま
+  const sw = $("stageWrap");
+  if (name === "phExp") { sw.style.display = "block"; sw.classList.remove("mini"); }
+  else if (name === "phReveal") { sw.style.display = "block"; sw.classList.add("mini"); }
+  else sw.style.display = "none";
+  if (ST && !ST.fake) requestAnimationFrame(() => ST.resize());
   window.scrollTo(0, 0);
 }
 function vib(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
@@ -537,6 +737,17 @@ function renderHome() {
   }
   const s = progress.streak;
   $("streakLine").textContent = (s.n > 0 ? "🔥 " + s.n + "週れんぞく" : "🔥 今週から積み上げ開始") + "／飛ばした部品 " + (progress.broken || 0) + "個";
+  // 発明メーター（ロボット充電）
+  const pct = Math.round((count / PROG_KEYS.length) * 100);
+  const fr = document.getElementById("fillRect");
+  if (fr) {
+    const h = 84 * count / PROG_KEYS.length;
+    fr.setAttribute("y", String(84 - h));
+    fr.setAttribute("height", String(h));
+  }
+  $("invBar").style.width = pct + "%";
+  $("invTitle").textContent = pct >= 100 ? "⚡ 発明準備完了!!" : "発明チャージ " + pct + "%";
+  $("invLine").textContent = pct >= 100 ? "第2章で制御盤設計へ進もう" : pct >= 50 ? "半分きた。電気が体に入ってきてる" : "学ぶほどロボットに電気がたまる";
 }
 
 /* ================================================================
@@ -697,7 +908,7 @@ function ensureStage() {
   const brush = brushedTexOf();
 
   // ---- 操作（タップ＝操作／ドラッグ＝スライダー or 回転） ----
-  let rotY = -0.5, rotX = 0.12, dragging = false, touched = false, px = 0, py = 0;
+  let rotY = -0.5, rotX = 0.12, zT = 5.6, dragging = false, touched = false, px = 0, py = 0;
   let mode = "orbit", startX = 0, startY = 0, startLoad = 0, downTime = 0, movedPx = 0;
   const ray = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
@@ -717,6 +928,7 @@ function ensureStage() {
   }
   el.addEventListener("pointerdown", (e) => {
     touched = true;
+    $("btnToReveal").disabled = false; // 3Dに触った＝実験した扱い
     if (ST.broken) { rebuildScene(); return; }
     dragging = true; px = e.clientX; py = e.clientY;
     downTime = performance.now(); movedPx = 0;
@@ -759,7 +971,7 @@ function ensureStage() {
   });
   el.addEventListener("wheel", (e) => {
     e.preventDefault();
-    camera.position.z = Math.max(3.0, Math.min(8.5, camera.position.z + e.deltaY * 0.004));
+    zT = Math.max(3.0, Math.min(8.5, zT + e.deltaY * 0.004));
   }, { passive: false });
 
   function resize() {
@@ -776,7 +988,13 @@ function ensureStage() {
     group, camera, brush, steel: steelTex,
     sceneApi: null, broken: false, springing: false, timeScale: 1, shake: 0,
     resize,
-    resetView() { rotY = -0.5; rotX = 0.12; touched = false; camera.position.z = 5.6; },
+    resetView() { rotY = -0.5; rotX = 0.12; zT = 5.6; touched = false; camera.position.z = 5.6; },
+    setView(ry, rx, z) { // カード実演用：カメラをそこへ寄せる
+      if (ry !== undefined) rotY = ry;
+      if (rx !== undefined) rotX = rx;
+      if (z !== undefined) zT = z;
+      touched = true;
+    },
     clearScene() {
       for (let i = group.children.length - 1; i >= 0; i--) {
         const c = group.children[i];
@@ -812,6 +1030,7 @@ function ensureStage() {
     if (!touched) rotY += 0.002;
     group.rotation.y += (rotY - group.rotation.y) * 0.12;
     group.rotation.x += (rotX - group.rotation.x) * 0.12;
+    camera.position.z += (zT - camera.position.z) * 0.09;
 
     if (ST.springing && !ST.broken) {
       const v = +$("loadRange").value;
@@ -1605,10 +1824,21 @@ $("btnToReveal").addEventListener("click", () => {
   setPhase("phReveal");
 });
 
+// カードに合わせて3Dが実演（カメラ寄せ＋荷重＋アクション）
+function applyCardFx(i) {
+  if (!ST || ST.fake || !cur || !cur.fx) return;
+  const fx = cur.fx[i];
+  if (!fx) return;
+  if (fx.act === "reset" && ST.broken) rebuildScene();
+  if (fx.load !== undefined && !ST.broken) { $("loadRange").value = fx.load; onLoadInput(); }
+  if (fx.act === "poke" && ST.sceneApi && ST.sceneApi.poke && !ST.broken) ST.sceneApi.poke();
+  if (fx.cam) ST.setView(fx.cam.ry, fx.cam.rx, fx.cam.z);
+}
 function renderCard() {
   $("rvCard").innerHTML = "<div>" + cur.cards[cardIdx] + "</div>";
   $("rvDots").innerHTML = cur.cards.map((_, i) => (i <= cardIdx ? "<span>●</span>" : "○")).join("");
   $("btnCardNext").textContent = cardIdx < cur.cards.length - 1 ? "つぎ →" : "ミニクイズへ →";
+  applyCardFx(cardIdx);
 }
 $("btnCardNext").addEventListener("click", () => {
   if (cardIdx < cur.cards.length - 1) { cardIdx++; renderCard(); }
@@ -1649,6 +1879,7 @@ $("btnQuizDone").addEventListener("click", () => {
   bumpStreak();
   saveProgress();
   $("clearStamp").innerHTML = cur.tag + " CLEAR!<small>今朝の15分 完了</small>";
+  $("teaserBox").innerHTML = "🔮 <b>これが分かると…</b><br>" + (cur.teaser || "");
   const s = progress.streak;
   $("clearMsg").innerHTML = "🔥 " + s.n + "週れんぞく<br>" + (curIdx < LESSONS.length - 1 ? "次回：" + LESSONS[curIdx + 1].tag + " " + LESSONS[curIdx + 1].title : "次回：章ボス戦！");
   setPhase("phClear");
