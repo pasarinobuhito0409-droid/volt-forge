@@ -272,7 +272,7 @@
     <div class="chap2">🔒 第2章 制御盤へ（リレー・シーケンス・センサー）<br>第1章クリアで解放（次のアップデートで配信）</div>
     <div class="streak" id="streakLine"></div>
     <div class="installhint">スマホ：ブラウザの共有メニュー →「ホーム画面に追加」でアプリになる</div>
-    <div class="verline">VOLT FORGE v1.1 ─ 第1章（回路基板の背景＋発明メーター＋カード実演）</div>
+    <div class="verline">VOLT FORGE v1.2 ─ 第1章（説明カード全18枚に専用3Dアニメ）</div>
   </section>
 
   <!-- ============ レッスン ============ -->
@@ -1088,11 +1088,11 @@ function wireLoop(pts, r, mat) {
   ST.group.add(mesh);
   return { curve, mesh };
 }
-function makeFlow(curve, n, size) {
+function makeFlow(curve, n, size, color) {
   const geo = new THREE.BufferGeometry();
   const posA = new Float32Array(n * 3);
   geo.setAttribute("position", new THREE.BufferAttribute(posA, 3));
-  const mat = new THREE.PointsMaterial({ color: 0x8fe4ff, size: size || 0.06, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+  const mat = new THREE.PointsMaterial({ color: color || 0x8fe4ff, size: size || 0.06, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
   const pts = new THREE.Points(geo, mat);
   ST.group.add(pts);
   const st = [];
@@ -1719,6 +1719,565 @@ function buildMicro(id) {
   };
 }
 
+/* ================================================================
+   🎬 カード専用3Dシーン（説明1枚＝専用アニメ1本、全18本）
+================================================================ */
+function setChips(html) { $("stageChips").innerHTML = html || ""; }
+function glassTubeCS(len, r, rotZ) {
+  const m = new THREE.Mesh(
+    new THREE.CylinderGeometry(r, r, len, 24, 1, true),
+    new THREE.MeshStandardMaterial({ color: 0xcfe0ea, metalness: 0, roughness: 0.08, transparent: true, opacity: 0.15, side: THREE.DoubleSide })
+  );
+  m.rotation.z = rotZ === undefined ? Math.PI / 2 : rotZ;
+  ST.group.add(m);
+  return m;
+}
+function atomGridCS(cols, rows, a, cx, cy, r) {
+  const list = [];
+  for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) for (let k = 0; k < 2; k++)
+    list.push({ x: cx + (i - (cols - 1) / 2) * a, y: cy + (j - (rows - 1) / 2) * a, z: (k - 0.5) * a * 0.8, ph: Math.random() * 6.28 });
+  const mesh = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(r || 0.07, 12, 8),
+    new THREE.MeshStandardMaterial({ color: 0xd8956a, metalness: 0.85, roughness: 0.35, envMapIntensity: 1.15, emissive: 0xff3300, emissiveIntensity: 0 }),
+    list.length
+  );
+  ST.group.add(mesh);
+  const dm = new THREE.Object3D();
+  return {
+    mesh, mat: mesh.material,
+    tick(t, amp) {
+      for (let i = 0; i < list.length; i++) {
+        const A = list[i];
+        dm.position.set(A.x + Math.sin(t * 3.1 + A.ph) * amp, A.y + Math.cos(t * 2.7 + A.ph * 1.3) * amp, A.z + Math.sin(t * 2.3 + A.ph * 2) * amp);
+        dm.rotation.set(0, 0, 0); dm.scale.set(1, 1, 1); dm.updateMatrix();
+        mesh.setMatrixAt(i, dm.matrix);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+  };
+}
+function driftPtsCS(cx, cy, w, h, n, color, size) {
+  const geo = new THREE.BufferGeometry();
+  const pa = new Float32Array(n * 3);
+  geo.setAttribute("position", new THREE.BufferAttribute(pa, 3));
+  const mat = new THREE.PointsMaterial({ color: color || 0x8fe4ff, size: size || 0.07, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+  const pts = new THREE.Points(geo, mat);
+  ST.group.add(pts);
+  const els = [];
+  for (let i = 0; i < n; i++) els.push({ x: cx + (Math.random() - 0.5) * w, y: cy + (Math.random() - 0.5) * h, z: (Math.random() - 0.5) * 0.25, ph: Math.random() * 6.28 });
+  return {
+    pts, mat,
+    tick(dt, t, drift) {
+      for (let i = 0; i < els.length; i++) {
+        const e = els[i];
+        e.x += (drift + Math.sin(t * 5 + e.ph) * 0.06) * dt;
+        e.y += Math.cos(t * 4 + e.ph * 2) * dt * 0.18;
+        if (e.x > cx + w / 2) e.x = cx - w / 2;
+        if (e.x < cx - w / 2) e.x = cx + w / 2;
+        if (e.y > cy + h / 2) e.y = cy + h / 2;
+        if (e.y < cy - h / 2) e.y = cy - h / 2;
+        pa[i * 3] = e.x; pa[i * 3 + 1] = e.y; pa[i * 3 + 2] = e.z;
+      }
+      geo.attributes.position.needsUpdate = true;
+    }
+  };
+}
+function straightFlowCS(x1, x2, y, z, n, color, size) {
+  const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(x1, y, z), new THREE.Vector3(x2, y, z)], false);
+  return makeFlow(curve, n, size || 0.06, color);
+}
+
+const CARD_SCENES = {
+  /* ===== L1 電気ってなに？ ===== */
+  l1: [
+    // ①銅線の断面：原子のすき間を電子が流れる
+    function () {
+      glassTubeCS(2.7, 0.5);
+      const atoms = atomGridCS(11, 3, 0.27, 0, 0, 0.07);
+      const el = driftPtsCS(0, 0, 2.6, 0.7, 34, 0x8fe4ff, 0.08);
+      setChips('<div class="chip" style="left:8%; top:22%">銅線の中をのぞいた図</div>' +
+               '<div class="chip" style="right:8%; top:66%">● 自由電子（じゆうでんし）</div>');
+      ST.setView(-0.15, 0.1, 4.0);
+      ST.sceneApi = { tick(dt, now) { const t = now * 0.001; atoms.tick(t, 0.01); el.tick(dt, t, 0.5); } };
+    },
+    // ②電池＝ポンプ：通った粒がランプを光らせる
+    function () {
+      const loop = wireLoop([[-1.0,-0.45,0],[0,-0.45,-0.5],[1.0,-0.45,0],[0,-0.45,0.5]], 0.032);
+      const flow = makeFlow(loop.curve, 60);
+      const bat = mkBattery(-1.0, 0, 2); bat.setCells(2);
+      bat.group.position.y = -0.42;
+      const lamp = mkLamp(1.0, 0); lamp.group.position.y = -0.42;
+      // 押し出し矢印（電池の上でポンプの向きを示す）
+      const arr = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.24, 16),
+        new THREE.MeshStandardMaterial({ color: 0xffd64f, emissive: 0xffd64f, emissiveIntensity: 0.6 }));
+      arr.rotation.z = -Math.PI / 2;
+      ST.group.add(arr);
+      setChips('<div class="chip" style="left:6%; top:34%">電池＝押し出すポンプ</div>' +
+               '<div class="chip" style="right:6%; top:38%">通ると光る</div>');
+      ST.setView(-0.35, 0.3, 4.3);
+      ST.sceneApi = { tick(dt, now) {
+        const t = now * 0.001;
+        flow.tick(dt, 0.35);
+        lamp.set(0.8 + Math.sin(t * 2) * 0.1);
+        arr.position.set(-1.0 + 0.15 + Math.sin(t * 3) * 0.06, 0.25, 0);
+      } };
+    },
+    // ③輪が切れたら全部止まる（外れる→ピタッ／戻る→流れる）
+    function () {
+      const R = 0.95, pts = [];
+      for (let a = 0.25; a < Math.PI * 2 - 0.25; a += 0.25) pts.push([Math.cos(a) * R, Math.sin(a) * R * 0.62 - 0.2, Math.sin(a) * 0.15]);
+      const loop = wireLoop(pts, 0.034);
+      const flow = makeFlow(loop.curve, 55);
+      // 外れるピース（すき間をふさぐ短い線）
+      const piece = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.034, 0.5, 10), copperMat());
+      piece.position.set(R * 0.97, -0.2, 0);
+      piece.rotation.x = Math.PI / 2 - 0.2;
+      ST.group.add(piece);
+      setChips('<div class="chip" id="csChip" style="left:30%; top:16%">輪がつながってる → 流れる</div>');
+      ST.setView(-0.1, 0.35, 4.1);
+      let phase = 0; // 0=閉 1=開
+      let timer = 0;
+      ST.sceneApi = { tick(dt, now) {
+        timer += dt;
+        if (timer > 2.6) { timer = 0; phase = 1 - phase; vib(10);
+          const c = $("csChip");
+          if (c) c.textContent = phase ? "1カ所切れた → 全部ピタッと止まる" : "輪がつながってる → 流れる";
+        }
+        const open = phase === 1;
+        piece.position.y = -0.2 + (open ? 0.45 : 0);
+        piece.rotation.z = open ? 0.7 : 0;
+        flow.tick(dt, open ? 0 : 0.4);
+        flow.mat.opacity = open ? 0.25 : 0.95;
+      } };
+    }
+  ],
+
+  /* ===== L2 電圧＝押す力 ===== */
+  l2: [
+    // ①電池1個 vs 2個＝押す力のちがい
+    function () {
+      glassTubeCS(2.5, 0.3).position.y = 0.42;
+      glassTubeCS(2.5, 0.3).position.y = -0.72;
+      const f1 = straightFlowCS(-1.2, 1.2, 0.42, 0, 16, 0x8fe4ff, 0.07);
+      const f2 = straightFlowCS(-1.2, 1.2, -0.72, 0, 16, 0x8fe4ff, 0.07);
+      const b1 = mkBattery(-1.65, 0, 1); b1.setCells(1); b1.group.position.y = 0.12;
+      const b2 = mkBattery(-1.65, 0.001, 2); b2.setCells(2); b2.group.position.y = -1.02;
+      setChips('<div class="chip" style="left:6%; top:22%">電池1個＝そっと押す</div>' +
+               '<div class="chip" style="left:6%; top:62%">電池2個＝ぐいぐい押す</div>');
+      ST.setView(-0.15, 0.15, 4.4);
+      ST.sceneApi = { tick(dt) { f1.tick(dt, 0.12); f2.tick(dt, 0.34); } };
+    },
+    // ②直列＝足し算（電池が積み上がって電圧が伸びる）
+    function () {
+      const cells = [];
+      for (let i = 0; i < 3; i++) {
+        const g = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.5, 20), steelMatOf({ color: 0x3d5a2e }));
+        body.castShadow = true;
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.07, 12), copperMat());
+        cap.position.y = 0.28;
+        g.add(body); g.add(cap);
+        g.position.set(-0.55, -0.85 + i * 0.56, 0);
+        g.visible = false;
+        ST.group.add(g);
+        cells.push(g);
+      }
+      // 電圧バー
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1, 0.22),
+        new THREE.MeshStandardMaterial({ color: 0xffd64f, emissive: 0xffd64f, emissiveIntensity: 0.5 }));
+      ST.group.add(bar);
+      setChips('<div class="chip" id="csChip" style="left:30%; top:16%">直列＝縦つなぎで足し算</div>');
+      ST.setView(-0.25, 0.15, 4.2);
+      let timer = 0, n = 0;
+      ST.sceneApi = { tick(dt) {
+        timer += dt;
+        if (timer > 1.3) {
+          timer = 0;
+          n = (n + 1) % 4;
+          cells.forEach((c, i) => (c.visible = i < n));
+          const c = $("csChip");
+          if (c) c.textContent = n === 0 ? "直列＝縦つなぎで足し算" : "1.5V × " + n + "本 ＝ " + (1.5 * n).toFixed(1) + "V";
+          if (n > 0) vib(8);
+        }
+        const h = Math.max(0.05, n * 0.55);
+        bar.scale.y = h;
+        bar.position.set(0.75, -0.85 + h / 2, 0);
+      } };
+    },
+    // ③定格オーバーでプチッ（ループ実演）
+    function () {
+      const lamp = mkLamp(0.55, 0);
+      lamp.group.position.y = -0.45;
+      lamp.group.scale.setScalar(1.6);
+      // 電圧バー＋定格ライン
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1, 0.2),
+        new THREE.MeshStandardMaterial({ color: 0x7fe0ff, emissive: 0x2ea8ff, emissiveIntensity: 0.5 }));
+      ST.group.add(bar);
+      const limit = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.03, 0.3),
+        new THREE.MeshStandardMaterial({ color: 0xff5d4d, emissive: 0xff5d4d, emissiveIntensity: 0.8 }));
+      limit.position.set(-0.85, -0.85 + (6 / 12) * 1.7, 0);
+      ST.group.add(limit);
+      setChips('<div class="chip red" style="left:6%; top:40%">← 定格6V（部品の限界）</div>' +
+               '<div class="chip" id="csChip" style="right:6%; top:18%">電圧を上げていくと…</div>');
+      ST.setView(-0.2, 0.15, 4.0);
+      let V = 0, dead = false, hold = 0;
+      ST.sceneApi = { tick(dt) {
+        if (!dead) {
+          V += dt * 2.6;
+          lamp.set(Math.min(1.3, V / 6));
+          if (V >= 9.6) { dead = true; hold = 0; lamp.kill(); vib(25);
+            const c = $("csChip"); if (c) c.textContent = "9.6V…プチッ!! 定格の1.6倍で切れた"; }
+        } else {
+          hold += dt;
+          if (hold > 2.2) { dead = false; V = 0; lamp.revive();
+            const c = $("csChip"); if (c) c.textContent = "新品と交換。電圧を上げていくと…"; }
+        }
+        const h = Math.max(0.05, (Math.min(V, 12) / 12) * 1.7);
+        bar.scale.y = h;
+        bar.position.set(-0.85, -0.85 + h / 2, 0);
+      } };
+    }
+  ],
+
+  /* ===== L3 電流と抵抗 ===== */
+  l3: [
+    // ①電流＝流れる量（多い vs 少ない）
+    function () {
+      glassTubeCS(2.5, 0.3).position.y = 0.42;
+      glassTubeCS(2.5, 0.3).position.y = -0.72;
+      const f1 = straightFlowCS(-1.2, 1.2, 0.42, 0, 42, 0x8fe4ff, 0.07);
+      const f2 = straightFlowCS(-1.2, 1.2, -0.72, 0, 8, 0x8fe4ff, 0.07);
+      setChips('<div class="chip" style="left:6%; top:22%">粒がたくさん＝電流 大（A大）</div>' +
+               '<div class="chip" style="left:6%; top:62%">粒が少ない＝電流 小</div>');
+      ST.setView(-0.15, 0.15, 4.4);
+      ST.sceneApi = { tick(dt) { f1.tick(dt, 0.25); f2.tick(dt, 0.25); } };
+    },
+    // ②抵抗＝通りにくさ（スカスカ vs ぎっしり）
+    function () {
+      glassTubeCS(2.5, 0.34).position.y = 0.42;
+      glassTubeCS(2.5, 0.34).position.y = -0.72;
+      const aTop = atomGridCS(5, 1, 0.5, 0, 0.42, 0.06);
+      const aBot = atomGridCS(12, 2, 0.21, 0, -0.72, 0.06);
+      const f1 = driftPtsCS(0, 0.42, 2.4, 0.4, 22, 0x8fe4ff, 0.07);
+      const f2 = driftPtsCS(0, -0.72, 2.4, 0.4, 22, 0x8fe4ff, 0.07);
+      setChips('<div class="chip" style="left:6%; top:22%">スカスカ＝抵抗 小 → スイスイ</div>' +
+               '<div class="chip red" style="left:6%; top:62%">ぎっしり＝抵抗 大 → つっかえる</div>');
+      ST.setView(-0.15, 0.15, 4.4);
+      ST.sceneApi = { tick(dt, now) {
+        const t = now * 0.001;
+        aTop.tick(t, 0.008); aBot.tick(t, 0.012);
+        f1.tick(dt, t, 0.75); f2.tick(dt, t, 0.16);
+      } };
+    },
+    // ③オームの法則（押すと増える・じゃまだと減る）
+    function () {
+      glassTubeCS(2.6, 0.36);
+      const atoms = atomGridCS(10, 2, 0.24, 0.3, 0, 0.06);
+      const el = driftPtsCS(0, 0, 2.5, 0.5, 26, 0x8fe4ff, 0.075);
+      const arr = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.34, 16),
+        new THREE.MeshStandardMaterial({ color: 0xffd64f, emissive: 0xffd64f, emissiveIntensity: 0.6 }));
+      arr.rotation.z = -Math.PI / 2;
+      arr.position.set(-1.6, 0, 0);
+      ST.group.add(arr);
+      setChips('<div class="chip" id="csChip" style="left:22%; top:14%">電流 ＝ 電圧 ÷ 抵抗</div>');
+      ST.setView(-0.15, 0.15, 4.2);
+      let timer = 0, phase = 0; // 0:ふつう 1:電圧UP 2:抵抗UP
+      ST.sceneApi = { tick(dt, now) {
+        const t = now * 0.001;
+        timer += dt;
+        if (timer > 2.6) { timer = 0; phase = (phase + 1) % 3;
+          const c = $("csChip");
+          if (c) c.textContent = phase === 0 ? "電流 ＝ 電圧 ÷ 抵抗" : phase === 1 ? "電圧UP（強く押す）→ 電流UP" : "抵抗UP（じゃま多い）→ 電流DOWN";
+        }
+        const V = phase === 1 ? 1.6 : 1.0;
+        const R = phase === 2 ? 2.4 : 1.0;
+        arr.scale.setScalar(0.8 + V * 0.5);
+        atoms.mesh.count = phase === 2 ? atoms.mesh.instanceMatrix.count : Math.floor(atoms.mesh.instanceMatrix.count * 0.55);
+        atoms.tick(t, 0.01);
+        el.tick(dt, t, 0.55 * V / R);
+      } };
+    }
+  ],
+
+  /* ===== L4 発熱 ===== */
+  l4: [
+    // ①こすれ＝熱（ぶつかるたび原子が暴れて赤くなる）
+    function () {
+      glassTubeCS(2.7, 0.5);
+      const atoms = atomGridCS(11, 3, 0.27, 0, 0, 0.07);
+      const el = driftPtsCS(0, 0, 2.6, 0.7, 34, 0x8fe4ff, 0.08);
+      setChips('<div class="chip" id="csChip" style="left:14%; top:18%">電子がぶつかる → 原子が暴れる＝熱</div>');
+      ST.setView(-0.15, 0.1, 4.0);
+      let heat = 0;
+      ST.sceneApi = { tick(dt, now) {
+        const t = now * 0.001;
+        heat += dt * 0.22;
+        if (heat > 1.25) { heat = 0; const c = $("csChip"); if (c) c.textContent = "冷えた状態からもう一回…"; }
+        else if (heat > 0.3) { const c = $("csChip"); if (c) c.textContent = "電子がぶつかる → 原子が暴れる＝熱（" + Math.round(heat * 80) + "℃）"; }
+        const hh = Math.min(1, heat);
+        atoms.tick(t, 0.008 + hh * 0.05);
+        atoms.mat.emissiveIntensity = hh * 0.8;
+        el.tick(dt, t, 1.1);
+      } };
+    },
+    // ②電流2倍＝熱4倍（並べて比較）
+    function () {
+      const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.3, 12),
+        new THREE.MeshStandardMaterial({ color: 0x6f665c, metalness: 0.6, roughness: 0.5, emissive: 0xff4400, emissiveIntensity: 0.25 }));
+      w1.rotation.z = Math.PI / 2; w1.position.y = 0.42; w1.castShadow = true;
+      ST.group.add(w1);
+      const w2 = w1.clone();
+      w2.material = w1.material.clone();
+      w2.material.emissiveIntensity = 2.4;
+      w2.position.y = -0.62;
+      ST.group.add(w2);
+      const f1 = straightFlowCS(-1.1, 1.1, 0.42, 0.08, 10, 0x8fe4ff, 0.06);
+      const f2 = straightFlowCS(-1.1, 1.1, -0.62, 0.08, 22, 0x8fe4ff, 0.06);
+      setChips('<div class="chip" style="left:6%; top:22%">電流 1倍 → 40℃</div>' +
+               '<div class="chip red" style="left:6%; top:60%">電流 2倍 → 160℃（4倍!）</div>');
+      ST.setView(-0.2, 0.15, 4.2);
+      ST.sceneApi = { tick(dt) { f1.tick(dt, 0.2); f2.tick(dt, 0.4); } };
+    },
+    // ③同じ電流でも太い線なら余裕
+    function () {
+      const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 2.3, 16), steelMatOf({ color: 0xc08050 }));
+      w1.rotation.z = Math.PI / 2; w1.position.y = 0.42; w1.castShadow = true;
+      ST.group.add(w1);
+      const w2 = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 2.3, 12),
+        new THREE.MeshStandardMaterial({ color: 0x6f665c, metalness: 0.6, roughness: 0.5, emissive: 0xff4400, emissiveIntensity: 2.4 }));
+      w2.rotation.z = Math.PI / 2; w2.position.y = -0.62;
+      ST.group.add(w2);
+      const f1 = straightFlowCS(-1.1, 1.1, 0.42, 0.12, 18, 0x8fe4ff, 0.06);
+      const f2 = straightFlowCS(-1.1, 1.1, -0.62, 0.05, 18, 0x8fe4ff, 0.06);
+      setChips('<div class="chip" style="left:6%; top:22%">太い線＝道が広い → ひんやり</div>' +
+               '<div class="chip red" style="left:6%; top:60%">細い線＝同じ量でアチチ🔥</div>');
+      ST.setView(-0.2, 0.15, 4.2);
+      ST.sceneApi = { tick(dt) { f1.tick(dt, 0.28); f2.tick(dt, 0.28); } };
+    }
+  ],
+
+  /* ===== L5 ショートとヒューズ ===== */
+  l5: [
+    // ①近道ができると電流が暴走
+    function () {
+      const loop = wireLoop([[-1.1,-0.3,0],[0,-0.3,-0.55],[1.1,-0.3,0],[0,-0.3,0.55]], 0.032);
+      const flow = makeFlow(loop.curve, 45);
+      // 近道（ショートバー）
+      const bypass = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.05, 10),
+        new THREE.MeshStandardMaterial({ color: 0xb03028, metalness: 0.6, roughness: 0.4, emissive: 0xff2211, emissiveIntensity: 0.2 }));
+      bypass.rotation.x = Math.PI / 2;
+      bypass.position.set(0, -0.3, 0);
+      ST.group.add(bypass);
+      const shortCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, -0.28, -0.5), new THREE.Vector3(0, -0.28, 0.5)], false);
+      const shortFlow = makeFlow(shortCurve, 30, 0.06, 0xffb0a0);
+      setChips('<div class="chip" id="csChip" style="left:24%; top:16%">ふつうの道を流れてる</div>');
+      ST.setView(-0.3, 0.4, 4.2);
+      let timer = 0, on = false;
+      ST.sceneApi = { tick(dt) {
+        timer += dt;
+        if (timer > 2.8) { timer = 0; on = !on; vib(12);
+          const c = $("csChip"); if (c) c.textContent = on ? "近道（ショート）発生 → 電流が暴走!!" : "ふつうの道を流れてる"; }
+        bypass.material.emissiveIntensity = on ? 1.6 : 0.2;
+        flow.tick(dt, on ? 0.1 : 0.35);
+        flow.mat.opacity = on ? 0.3 : 0.95;
+        shortFlow.tick(dt, on ? 2.2 : 0);
+        shortFlow.mat.opacity = on ? 1 : 0;
+      } };
+    },
+    // ②溶断のクローズアップ（細る→赤熱→パチン）
+    function () {
+      const glassMat = new THREE.MeshStandardMaterial({ color: 0xd8e6ee, metalness: 0, roughness: 0.06, transparent: true, opacity: 0.22 });
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 1.7, 24, 1, true), glassMat);
+      tube.rotation.z = Math.PI / 2;
+      ST.group.add(tube);
+      [-0.92, 0.92].forEach((dx) => {
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.37, 0.37, 0.3, 18), copperMat({ color: 0xd8b060 }));
+        cap.rotation.z = Math.PI / 2;
+        cap.position.x = dx;
+        cap.castShadow = true;
+        ST.group.add(cap);
+      });
+      const fwMat = new THREE.MeshStandardMaterial({ color: 0x9aa2aa, metalness: 0.7, roughness: 0.4, emissive: 0xff5500, emissiveIntensity: 0 });
+      const fwL = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.8, 10), fwMat);
+      fwL.rotation.z = Math.PI / 2; fwL.position.x = -0.4;
+      const fwR = fwL.clone(); fwR.position.x = 0.4;
+      ST.group.add(fwL); ST.group.add(fwR);
+      const flow = straightFlowCS(-1.4, 1.4, 0, 0, 24, 0x8fe4ff, 0.07);
+      setChips('<div class="chip" id="csChip" style="left:20%; top:16%">ヒューズの中＝わざと細い線</div>');
+      ST.setView(-0.15, 0.15, 3.6);
+      let t2 = 0;
+      ST.sceneApi = { tick(dt) {
+        t2 += dt;
+        const c = $("csChip");
+        if (t2 < 2) { // 正常
+          fwL.position.x = -0.4; fwR.position.x = 0.4;
+          fwL.scale.y = 1; fwR.scale.y = 1;
+          fwMat.emissiveIntensity = 0;
+          glassMat.opacity = 0.22;
+          flow.tick(dt, 0.3); flow.mat.opacity = 0.95;
+          if (c && t2 < 0.1) c.textContent = "ヒューズの中＝わざと細い線";
+        } else if (t2 < 3.4) { // 過電流→赤熱して細る
+          const k = (t2 - 2) / 1.4;
+          fwMat.emissiveIntensity = k * 4;
+          fwL.scale.y = 1 - k * 0.4; fwR.scale.y = 1 - k * 0.4;
+          flow.tick(dt, 1.6);
+          if (c) c.textContent = "過電流!! 細い線が真っ先に熱くなる…";
+        } else if (t2 < 5.2) { // パチン
+          if (t2 - dt < 3.4) vib(25);
+          fwL.position.x = -0.55; fwR.position.x = 0.55; // すき間＝切れた
+          fwL.scale.y = 0.5; fwR.scale.y = 0.5;
+          fwMat.emissiveIntensity = Math.max(0, 1 - (t2 - 3.4));
+          glassMat.opacity = 0.4;
+          flow.tick(dt, 0); flow.mat.opacity = 0.15;
+          if (c) c.textContent = "パチン!! 溶断（ようだん）＝身代わり完了";
+        } else t2 = 0;
+      } };
+    },
+    // ③ヒューズ選定（デカすぎ vs ちょうど）
+    function () {
+      function miniSet(y) {
+        const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.2, 10),
+          new THREE.MeshStandardMaterial({ color: 0x8a7f72, metalness: 0.6, roughness: 0.5, emissive: 0xff4400, emissiveIntensity: 0 }));
+        wire.rotation.z = Math.PI / 2;
+        wire.position.y = y;
+        ST.group.add(wire);
+        const g = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.5, 14),
+          new THREE.MeshStandardMaterial({ color: 0xd8e6ee, metalness: 0, roughness: 0.06, transparent: true, opacity: 0.3 }));
+        g.rotation.z = Math.PI / 2;
+        g.position.set(-0.7, y, 0);
+        ST.group.add(g);
+        const fw = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.44, 8),
+          new THREE.MeshStandardMaterial({ color: 0x9aa2aa, metalness: 0.7, roughness: 0.4, emissive: 0xff5500, emissiveIntensity: 0 }));
+        fw.rotation.z = Math.PI / 2;
+        fw.position.set(-0.7, y, 0);
+        ST.group.add(fw);
+        return { wire, fw, glass: g };
+      }
+      const bad = miniSet(0.45);   // デカすぎヒューズ：切れずに配線が燃える
+      const good = miniSet(-0.65); // ちょうど：ヒューズが切れて配線無事
+      setChips('<div class="chip red" style="left:5%; top:20%">デカすぎヒューズ→線が燃える✕</div>' +
+               '<div class="chip" style="left:5%; top:60%">ちょうど→ヒューズが守る○</div>');
+      ST.setView(-0.2, 0.15, 4.1);
+      let t2 = 0;
+      ST.sceneApi = { tick(dt) {
+        t2 += dt;
+        const k = Math.min(1, t2 / 2.2);
+        if (t2 < 2.8) {
+          bad.wire.material.emissiveIntensity = k * 2.6; // 配線が焼ける
+          good.fw.material.emissiveIntensity = k * 4;    // ヒューズが働く
+          if (k >= 1) { good.fw.scale.x = 0.4; good.fw.position.x = -0.82; good.glass.material.opacity = 0.45; }
+        } else if (t2 > 4.2) {
+          t2 = 0;
+          bad.wire.material.emissiveIntensity = 0;
+          good.fw.material.emissiveIntensity = 0;
+          good.fw.scale.x = 1; good.fw.position.x = -0.7;
+          good.glass.material.opacity = 0.3;
+        }
+      } };
+    }
+  ],
+
+  /* ===== L6 電源容量 ===== */
+  l6: [
+    // ①機器の電流は足し算（1台ずつ増える）
+    function () {
+      const lamp = mkLamp(-0.9, 0.15); lamp.group.position.y = -0.55;
+      const motor = new THREE.Group();
+      const mb = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.3, 18), steelMatOf({ color: 0x4a5560 }));
+      mb.rotation.z = Math.PI / 2; mb.castShadow = true;
+      const fan = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.26, 0.06), copperMat({ color: 0xd8b060 }));
+      fan.position.x = 0.18;
+      motor.add(mb); motor.add(fan);
+      motor.position.set(0, -0.5, 0.15);
+      ST.group.add(motor);
+      const heater = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.18),
+        new THREE.MeshStandardMaterial({ color: 0x5a5148, metalness: 0.5, roughness: 0.55, emissive: 0xff4400, emissiveIntensity: 0 }));
+      heater.position.set(0.95, -0.5, 0.15);
+      heater.castShadow = true;
+      ST.group.add(heater);
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1, 0.2),
+        new THREE.MeshStandardMaterial({ color: 0xffd64f, emissive: 0xffd64f, emissiveIntensity: 0.5 }));
+      ST.group.add(bar);
+      setChips('<div class="chip" id="csChip" style="left:24%; top:16%">機器の電流は足し算</div>');
+      ST.setView(-0.25, 0.25, 4.3);
+      let timer = 0, n = 0, fanA = 0;
+      ST.sceneApi = { tick(dt) {
+        timer += dt;
+        if (timer > 1.5) { timer = 0; n = (n + 1) % 4;
+          const c = $("csChip");
+          const A = [0, 2, 7, 16][n];
+          if (c) c.textContent = n === 0 ? "機器の電流は足し算" : ["", "ランプ 2A", "＋モーター → 7A", "＋ヒーター → 16A"][n];
+          vib(8);
+        }
+        lamp.set(n >= 1 ? 1 : 0);
+        fanA += dt * (n >= 2 ? 9 : 0);
+        fan.rotation.x = fanA;
+        heater.material.emissiveIntensity = n >= 3 ? 0.9 : 0;
+        const h = Math.max(0.05, [0, 2, 7, 16][n] / 16 * 1.5);
+        bar.scale.y = h;
+        bar.position.set(1.7, -0.85 + h / 2, 0);
+      } };
+    },
+    // ②容量＝道の混みぐあい（渋滞していく）
+    function () {
+      glassTubeCS(2.7, 0.42);
+      const f1 = driftPtsCS(0, 0, 2.6, 0.6, 60, 0x8fe4ff, 0.07);
+      setChips('<div class="chip" id="csChip" style="left:24%; top:16%">まだ余裕（スイスイ）</div>');
+      ST.setView(-0.15, 0.12, 4.1);
+      let t2 = 0;
+      ST.sceneApi = { tick(dt, now) {
+        t2 += dt;
+        if (t2 > 7) t2 = 0;
+        const k = Math.min(1, t2 / 5);
+        const c = $("csChip");
+        if (c) c.textContent = k < 0.4 ? "まだ余裕（スイスイ）" : k < 0.8 ? "混んできた…（熱が出はじめる）" : "満杯!! これが容量オーバー";
+        f1.mat.size = 0.07;
+        f1.mat.opacity = 0.6 + k * 0.4;
+        f1.mat.color.setHSL(0.55 - k * 0.5, 0.9, 0.6);
+        f1.tick(dt, now * 0.001, 0.75 - k * 0.5);
+      } };
+    },
+    // ③8割ルール（3Dメーターの針）
+    function () {
+      const zones = [[0.4 * Math.PI, 0.6 * Math.PI, 0x3ef0a0], [0.2 * Math.PI, 0.2 * Math.PI, 0xffd64f], [0, 0.2 * Math.PI, 0xff5d4d]];
+      zones.forEach(([rot, arc, col]) => {
+        const seg = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.07, 12, 40, arc),
+          new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.5 }));
+        seg.rotation.z = rot;
+        seg.position.y = -0.5;
+        ST.group.add(seg);
+      });
+      const needle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.0, 0.05), steelMatOf({ color: 0xeef2f6 }));
+      needle.geometry.translate(0, 0.5, 0);
+      needle.position.y = -0.5;
+      ST.group.add(needle);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.1, 16), steelMatOf({ color: 0x39404a }));
+      hub.rotation.x = Math.PI / 2;
+      hub.position.y = -0.5;
+      ST.group.add(hub);
+      setChips('<div class="chip" id="csChip" style="left:20%; top:14%">容量の8割で止める＝設計の余裕</div>');
+      ST.setView(0, 0.1, 3.8);
+      let f = 0.2, dir = 1;
+      ST.sceneApi = { tick(dt) {
+        f += dt * 0.13 * dir;
+        if (f > 0.8) { f = 0.8; dir = 0; vib(10);
+          const c = $("csChip"); if (c) c.textContent = "8割＝黄色信号でSTOP。ここで止める勇気"; }
+        if (dir === 0) { /* 8割でプルプル */ needle.rotation.z = Math.PI / 2 - Math.PI * (f + (Math.random() - 0.5) * 0.01); return; }
+        needle.rotation.z = Math.PI / 2 - Math.PI * f;
+      } };
+    }
+  ]
+};
+
+function buildCardScene(id, i) {
+  if (!ST || ST.fake) return;
+  ST.clearScene();
+  ST.resetView();
+  const f = CARD_SCENES[id] && CARD_SCENES[id][i];
+  if (f) f(); else BUILDERS[id]();
+  requestAnimationFrame(() => ST.resize());
+}
+
 // ミクロ⇔実験台の切りかえ
 let microOn = false;
 function setMicro(on) {
@@ -1810,7 +2369,7 @@ $("btnMicro").addEventListener("click", () => setMicro(!microOn));
 function onLoadInput() {
   const v = +$("loadRange").value;
   $("loadVal").textContent = cur ? cur.val(v) : v;
-  if (ST && !ST.fake && ST.sceneApi) ST.sceneApi.update(v / 100);
+  if (ST && !ST.fake && ST.sceneApi && ST.sceneApi.update) ST.sceneApi.update(v / 100);
   $("btnToReveal").disabled = false;
 }
 $("loadRange").addEventListener("input", onLoadInput);
@@ -1838,7 +2397,7 @@ function renderCard() {
   $("rvCard").innerHTML = "<div>" + cur.cards[cardIdx] + "</div>";
   $("rvDots").innerHTML = cur.cards.map((_, i) => (i <= cardIdx ? "<span>●</span>" : "○")).join("");
   $("btnCardNext").textContent = cardIdx < cur.cards.length - 1 ? "つぎ →" : "ミニクイズへ →";
-  applyCardFx(cardIdx);
+  buildCardScene(cur.id, cardIdx); // 説明1枚＝専用3Dアニメ1本
 }
 $("btnCardNext").addEventListener("click", () => {
   if (cardIdx < cur.cards.length - 1) { cardIdx++; renderCard(); }
