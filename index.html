@@ -967,9 +967,9 @@ const LESSONS = [
     quiz: {
       q: "回路の輪っかが1カ所切れたら？",
       opts: ["半分だけ流れる", "全部止まる", "逆に流れる"], ans: 1,
-      exp: "電気は輪っかがつながってる時だけ流れる。スイッチはわざと切る場所。"
+      exp: "電気は輪っかが<br>つながってる時だけ流れる。<br><br>スイッチは<br>わざと切る場所。"
     },
-    teaser: "配線図が「電子の道」として読める→<b>自作機械の配線デビュー</b>の第一歩",
+    teaser: "配線図が<br>「電子の道」として読める<br>→<b>自作機械の配線デビュー</b>の第一歩",
     fx: [
       { load: 55, cam: { ry: -0.15, rx: 0.55, z: 4.3 } },
       { load: 55, cam: { ry: 0.75, rx: 0.2, z: 4.2 } },
@@ -1051,7 +1051,7 @@ const LESSONS = [
     quiz: {
       q: "細い線に大電流を流し続けると？",
       opts: ["特に何も起きない", "熱くなって最悪発火", "電気が速くなる"], ans: 1,
-      exp: "ジュール熱で被覆が溶け、発火につながる。電線の太さ選定が電気設計の基本。"
+      exp: "ジュール熱で被覆が溶け、<br>発火につながる。<br><br>電線の太さ選定が<br>電気設計の基本。"
     },
     teaser: "電線の太さが選べる→<b>燃えない機械</b>が設計できる",
     fx: [
@@ -1079,7 +1079,7 @@ const LESSONS = [
     quiz: {
       q: "ヒューズの役目は？",
       opts: ["電気を速くする", "わざと最初に切れて回路を守る", "電圧を上げる"], ans: 1,
-      exp: "過電流のとき身代わりに溶けて切れる（溶断）。だから交換できる場所に付ける。"
+      exp: "過電流のとき<br>身代わりに溶けて切れる（溶断）。<br><br>だから交換できる場所に付ける。"
     },
     teaser: "保護回路が入れられる→<b>自作ロボットを火事から守れる</b>",
     fx: [
@@ -1107,7 +1107,7 @@ const LESSONS = [
     quiz: {
       q: "ブレーカーが落ちる理由は？",
       opts: ["電気の使いすぎ（合計電流が容量オーバー）", "電圧が低すぎた", "スイッチの故障"], ans: 0,
-      exp: "合計電流が容量を超えると、配線が熱くなる前に自動で切って守ってくれる。"
+      exp: "合計電流が容量を超えると、<br>配線が熱くなる前に<br>自動で切って守ってくれる。"
     },
     teaser: "容量計算ができる→<b>制御盤の設計デビュー</b>",
     fx: [
@@ -1147,27 +1147,27 @@ const DRILLS = [
     reason: "遠い機器ほど電圧が痩せる。", fix: "24V機器は特にシビア。線を太くするか電源を近くに。" },
   { id: "protect1", tag: "保護(protect)", situation: "ブレーカー容量を電線の許容電流より大きくした。", ans: "NG",
     reason: "ブレーカーより先に電線が燃える。", fix: "対策：ブレーカーは電線を守るのが本務。電線基準で選ぶ。" },
-  { id: "protect2", tag: "保護(protect)", situation: "モーターにサーマルリレー（過負荷でモーターを守る装置）を付けた。", ans: "OK",
+  { id: "protect2", tag: "保護(protect)", situation: "モーターに<br>サーマルリレー<br>（過負荷でモーターを守る装置）を付けた。", ans: "OK",
     reason: "拘束・過負荷の焼損防止の定石。", fix: "設定値はモーター定格電流に合わせる。" },
   { id: "protect3", tag: "保護(protect)", situation: "ヒューズがよく切れるので容量を上げた。", ans: "NG",
     reason: "ヒューズは身代わり。上げたら本体が燃える。", fix: "対策：なぜ切れるかの原因調査が先。" },
   { id: "protect4", tag: "保護(protect)", situation: "動力回路と制御回路の保護を分けた。", ans: "OK",
     reason: "制御が生きていれば異常表示・安全停止ができる。", fix: "一蓮托生の回路は原因究明も難しい。" },
-  { id: "power1", tag: "容量(power)", situation: "24V電源をセンサ・電磁弁の起動突入電流を無視して選定した。", ans: "NG",
+  { id: "power1", tag: "容量(power)", situation: "24V電源を<br>センサ・電磁弁の起動突入電流を<br>無視して選定した。", ans: "NG",
     reason: "起動の一瞬は定格の数倍。電源が落ちて全滅。", fix: "対策：突入込みで余裕率を持つ。" },
-  { id: "power2", tag: "容量(power)", situation: "モーターの起動電流（定格の数倍）を考慮してブレーカーを選定した。", ans: "OK",
+  { id: "power2", tag: "容量(power)", situation: "モーターの起動電流<br>（定格の数倍）を考慮して<br>ブレーカーを選定した。", ans: "OK",
     reason: "起動でトリップしない・でも異常では切れる絶妙な選定。", fix: "モーターブレーカーという専用品もある。" },
   { id: "power3", tag: "容量(power)", situation: "将来の増設分の予備容量・予備端子を見込んだ。", ans: "OK",
     reason: "盤の増設は必ず来る。", fix: "予備20%は先輩の知恵。" },
   { id: "power4", tag: "容量(power)", situation: "発熱計算をせず密閉盤に機器を詰め込んだ。", ans: "NG",
-    reason: "盤内温度が上がると機器寿命が激減・誤動作。", fix: "対策：発熱合計を計算し、ファン・ルーバー・盤サイズで逃がす。" },
+    reason: "盤内温度が上がると機器寿命が激減・誤動作。", fix: "対策：発熱合計を計算し、<br>ファン・ルーバー・盤サイズで逃がす。" },
   { id: "ctrl1", tag: "制御(ctrl)", situation: "非常停止をPLCのプログラムだけで処理した。", ans: "NG",
     reason: "プログラムは凍る・バグる。非常停止が効かない機械は凶器。", fix: "対策：非常停止はハード回路で直接動力を切る。" },
-  { id: "ctrl2", tag: "制御(ctrl)", situation: "センサの接点を「断線したら停止する」向き（安全側）に選んだ。", ans: "OK",
+  { id: "ctrl2", tag: "制御(ctrl)", situation: "センサの接点を<br>「断線したら停止する」向き<br>（安全側）に選んだ。", ans: "OK",
     reason: "フェールセーフの基本。壊れ方まで設計する。", fix: "b接点の使いどころ。" },
   { id: "ctrl3", tag: "制御(ctrl)", situation: "リレー接点の容量を負荷の突入電流で選んだ。", ans: "OK",
     reason: "接点は突入で溶着する。", fix: "ランプ・モーター・コンデンサ負荷は特に注意。" },
-  { id: "ctrl4", tag: "制御(ctrl)", situation: "電磁弁（コイル負荷）をサージ対策なしでPLC出力に直結した。", ans: "NG",
+  { id: "ctrl4", tag: "制御(ctrl)", situation: "電磁弁（コイル負荷）を<br>サージ対策なしで<br>PLC出力に直結した。", ans: "NG",
     reason: "切った瞬間の逆起電力（サージ）で出力が死ぬ。", fix: "対策：ダイオード・バリスタ・CR回路を並列に。" },
   { id: "gnd1", tag: "接地(gnd)", situation: "盤のアース線を塗装面の上からネジ留めした。", ans: "NG",
     reason: "塗膜は絶縁体。アースが効いていない。", fix: "対策：塗装レス面か塗膜を剥がす＋菊座金。" },
@@ -1183,7 +1183,7 @@ const DRILLS = [
     reason: "感電・短絡事故。", fix: "対策：端子カバー・アクリルカバー・危険表示。" },
   { id: "safety3", tag: "安全(safety)", situation: "盤内ポケットに回路図を入れた。", ans: "OK",
     reason: "10年後の保全員への最強の贈り物。", fix: "図面がない盤は開けるのも怖い。" },
-  { id: "safety4", tag: "安全(safety)", situation: "配線の色ルール（AC/DC/接地の色分け）を「動くからヨシ」で無視した。", ans: "NG",
+  { id: "safety4", tag: "安全(safety)", situation: "配線の色ルール<br>（AC/DC/接地の色分け）を<br>「動くからヨシ」で無視した。", ans: "NG",
     reason: "次に触る人が誤認して感電・短絡する。", fix: "対策：色は情報。社内/JIS慣例に従う。" }
 ];
 /* ドリルのtag→レッスン対応表（サビマップ更新用。DRILLS=第2章寄りの実務テーマ、
@@ -3542,19 +3542,19 @@ function buildCardScene(id, i) {
 ================================================================ */
 const PHOTOS = {
   l1: { img: "assets/photo/v1.jpg", title: "本物の制御盤",
-    cap: "PLC（プログラムで動く頭脳）・ブレーカー・端子台が整列。線の色と番号が全部「情報」。きれいな盤は事故が少ない。",
+    cap: "PLC（プログラムで動く頭脳）・<br>ブレーカー・端子台が整列。<br><br>線の色と番号が全部「情報」。<br>きれいな盤は事故が少ない。",
     points: [{ x: 50, y: 28, t: "PLC＝盤の頭脳" }, { x: 50, y: 72, t: "配線は色とダクトで整理" }],
     credit: "写真: Elmschrat（CC BY-SA 3.0／Wikimedia Commons）", vq: "制御盤 中身 見方" },
   l3: { img: "assets/photo/v2.jpg", title: "実物のブレーカー",
-    cap: "電線を過電流から守る門番。容量選定の基準は「電線が燃えない」こと。機器でなく電線を守るのが本務。",
+    cap: "電線を過電流から守る門番。<br><br>容量選定の基準は<br>「電線が燃えない」こと。<br>機器でなく電線を守るのが本務。",
     points: [{ x: 50, y: 50, t: "定格電流の表示を見る" }],
     credit: "写真: 01x07x2022000（CC0／Wikimedia Commons）", vq: "ブレーカー 選定 仕組み" },
   l4: { img: "assets/photo/v3.jpg", title: "ガラス管ヒューズ",
-    cap: "中の細い線がジュール熱で溶けて回路を守る「身代わり」。切れたら容量アップでなく原因調査が先。",
+    cap: "中の細い線がジュール熱で溶けて<br>回路を守る「身代わり」。<br><br>切れたら容量アップでなく<br>原因調査が先。",
     points: [{ x: 50, y: 50, t: "この細線が身代わりに溶ける" }],
     credit: "写真: André Karwath（CC BY-SA 2.5／Wikimedia Commons）", vq: "ヒューズ 溶断 仕組み" },
   l5: { img: "assets/photo/v4.jpg", title: "圧着端子とネジ端子",
-    cap: "電気トラブルの多くは「接続部」で起きる。正しい圧着と締め付けトルクは品質そのもの。",
+    cap: "電気トラブルの多くは<br>「接続部」で起きる。<br><br>正しい圧着と締め付けトルクは<br>品質そのもの。",
     points: [{ x: 50, y: 50, t: "圧着部＝接触抵抗の勝負所" }],
     credit: "写真: Simon A. Eugster（CC BY-SA 3.0／Wikimedia Commons）", vq: "圧着端子 かしめ 正しい方法" }
 };
@@ -3565,7 +3565,7 @@ function openPhoto() {
   if (!P) return;
   vib(10);
   $("pmTitle").textContent = "📷 " + P.title;
-  $("pmCap").textContent = P.cap;
+  $("pmCap").innerHTML = P.cap;
   $("pmCredit").textContent = P.credit;
   const fig = $("pmFig");
   fig.innerHTML = "";
@@ -3886,7 +3886,7 @@ function openDrill() {
 function renderDrillQ() {
   const d = dSet[dIdx];
   $("dqProgress").textContent = "第" + (dIdx + 1) + "問 ／ 5問中 ── 正解 " + dScore;
-  $("dqText").textContent = d.situation;
+  $("dqText").innerHTML = d.situation;
   $("dqTag").textContent = "分野：" + d.tag;
   $("dqExp").style.display = "none";
   $("btnDrillNext").style.display = "none";
@@ -3991,7 +3991,7 @@ function openRepaint(lessonId) {
 function renderRQQ() {
   const { item, q } = rqSet[rqIdx];
   $("rqProgress").textContent = "第" + (rqIdx + 1) + "問 ／ " + rqSet.length + "問中" + (rqMode === "repaint" ? "（🦠再塗装）" : "（忘れかけた頃の再登場）");
-  $("rqText").textContent = q.q;
+  $("rqText").innerHTML = q.q;
   $("rqExp").style.display = "none";
   $("btnRQNext").style.display = "none";
   const wrap = $("rqOpts");
@@ -4077,7 +4077,7 @@ function renderDailyQ() {
   const q = pick.item;
   $("dailyProgress").textContent = "第" + (dailyIdx + 1) + "問 ／ " + dailySet.length + "問中";
   $("dailySrcChip").innerHTML = '<span class="srcchip">' + pick.info.emoji + " " + pick.info.name + "</span>";
-  $("dailyText").textContent = q.q;
+  $("dailyText").innerHTML = q.q;
   $("dailyExp").style.display = "none";
   $("btnDailyNext").style.display = "none";
   const wrap = $("dailyOpts");
