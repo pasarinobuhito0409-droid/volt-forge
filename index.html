@@ -438,6 +438,21 @@
   .gacha-result { margin-top: 18px; font-size: 16px; font-weight: 900; color: #fff8e6; }
   .gacha-result small { display: block; margin-top: 6px; font-size: 12.5px; font-weight: 600; color: #9fb4cb; }
   .gacha-close { margin-top: 18px; }
+
+  /* 🙋 相棒に質問（v2.2） */
+  .askbtn { position: fixed; right: 14px; bottom: 14px; z-index: 30; border: none; border-radius: 999px; padding: 13px 18px; font-weight: 900; font-size: 13.5px; background: linear-gradient(135deg,#4fd1ff,#7ef0c9); color: #06222e; box-shadow: 0 4px 20px #4fd1ff66; cursor: pointer; }
+  #askModal { display: none; position: fixed; inset: 0; z-index: 60; background: rgba(6,8,12,.88); align-items: flex-end; justify-content: center; }
+  .ask-sheet { position: relative; width: min(520px,100%); background: #161b22; border: 1px solid #2b3542; border-radius: 20px 20px 0 0; padding: 16px 16px 22px; }
+  .ask-title { font-weight: 900; font-size: 15px; color: #bfe8ff; margin-bottom: 4px; }
+  .ask-sub { font-size: 11px; color: #7f8a97; margin-bottom: 10px; line-height: 1.7; }
+  .qchips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .qc { padding: 10px 13px; border-radius: 999px; border: 1px solid #37424f; background: #1d2530; color: #dfe7f0; font-weight: 800; font-size: 12.5px; cursor: pointer; }
+  .qc.on { border-color: #4fd1ff; background: #12293a; color: #bfe8ff; }
+  #askFree { width: 100%; min-height: 56px; background: #10151c; color: #e2e7ee; border: 1px solid #2e3947; border-radius: 12px; padding: 10px; font-size: 13px; line-height: 1.7; }
+  .ask-preview { margin-top: 10px; background: #10151c; border: 1px dashed #35404d; border-radius: 12px; padding: 10px; font-size: 11.5px; color: #9fb2c2; line-height: 1.8; max-height: 110px; overflow: auto; white-space: pre-wrap; }
+  .ask-send { width: 100%; margin-top: 12px; padding: 14px; border: none; border-radius: 14px; font-weight: 900; font-size: 14px; background: #4fd1ff; color: #06222e; cursor: pointer; box-shadow: 0 0 18px #4fd1ff55; }
+  .ask-log { font-size: 10.5px; color: #6f7a86; margin-top: 8px; text-align: center; }
+  .ask-close { position: absolute; right: 14px; top: 10px; background: none; border: none; color: #8a93a0; font-size: 20px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -534,6 +549,7 @@
 
   <!-- ============ レッスン ============ -->
   <section id="viewLesson" class="view">
+    <button class="askbtn" id="askBtn">🙋 相棒に質問</button>
     <div class="lesson-top">
       <button class="backbtn" id="btnBack">←</button>
       <span class="tag" id="lsTag"></span><span id="lsTitle"></span>
@@ -748,6 +764,25 @@
     <div class="gacha-orb" id="gachaOrb"><span class="bolt" id="gachaBolt">⚡</span></div>
     <div class="gacha-result" id="gachaResultText"></div>
     <button class="cta gacha-close" id="btnGachaClose">とじる</button>
+  </div>
+</div>
+
+<!-- 🙋 相棒に質問モーダル（v2.2） -->
+<div id="askModal">
+  <div class="ask-sheet">
+    <button class="ask-close" id="askClose">✕</button>
+    <div class="ask-title">🙋 相棒（Claude）に質問</div>
+    <div class="ask-sub" id="askCtxLine">いま勉強中のレッスン情報は自動で伝わる</div>
+    <div class="qchips">
+      <button class="qc" data-q="式や考え方のイメージがわかない">🌀 イメージがわかない</button>
+      <button class="qc" data-q="これを現場（板金・機械設計）でどう使うのか知りたい">🏭 現場でどう使う？</button>
+      <button class="qc" data-q="もっと身近な例で説明してほしい">🍎 身近な例で</button>
+      <button class="qc" data-q="問題の解き方の手順を一歩ずつ教えてほしい">👣 解き方を一歩ずつ</button>
+    </div>
+    <textarea id="askFree" placeholder="自由に書いてもOK（例: 断面積ってどこの面積？）"></textarea>
+    <div class="ask-preview" id="askPreview"></div>
+    <button class="ask-send" id="askSend">Claudeを開いて質問する →</button>
+    <div class="ask-log">📓 質問は「俺の質問ノート」にも自動保存（復習ネタ化）</div>
   </div>
 </div>
 
@@ -4216,6 +4251,48 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   });
 }
+
+/* ================= 🙋 相棒に質問（全レッスン共通） ================= */
+(function () {
+  const modal = document.getElementById("askModal");
+  const free = document.getElementById("askFree");
+  const preview = document.getElementById("askPreview");
+  let picked = [];
+  function ctx() {
+    const lesson = (typeof cur !== "undefined" && cur) ? (cur.tag + "「" + cur.title + "」") : "ホーム";
+    return "【VOLT FORGE（電気設計3D教科書）で勉強中】\nレッスン: " + lesson +
+      "\n質問者: 板金・機械設計者（小学生にもわかる説明＋身近な例＋現場での使い方で教えてほしい）\n\n質問:\n";
+  }
+  function build() {
+    const qs = [...picked];
+    if (free.value.trim()) qs.push(free.value.trim());
+    const body = qs.length ? qs.map((q) => "・" + q).join("\n") : "・（チップを選ぶか自由に書いてね）";
+    preview.textContent = ctx() + body;
+    return ctx() + body;
+  }
+  document.querySelectorAll(".qc").forEach((b) => b.addEventListener("click", () => {
+    const q = b.dataset.q;
+    if (picked.includes(q)) { picked = picked.filter((x) => x !== q); b.classList.remove("on"); }
+    else { picked.push(q); b.classList.add("on"); }
+    build();
+  }));
+  free.addEventListener("input", build);
+  document.getElementById("askBtn").addEventListener("click", () => {
+    document.getElementById("askCtxLine").innerHTML = "いま勉強中: <b>" + ((typeof cur !== "undefined" && cur) ? (cur.tag + " " + cur.title) : "") + "</b>（自動で伝わる）";
+    modal.style.display = "flex"; build();
+  });
+  document.getElementById("askClose").addEventListener("click", () => { modal.style.display = "none"; });
+  modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
+  document.getElementById("askSend").addEventListener("click", () => {
+    const q = build();
+    try {
+      const log = JSON.parse(localStorage.getItem("forge-questions-v1") || "[]");
+      log.unshift({ app: "volt", lesson: (typeof cur !== "undefined" && cur) ? cur.title : "", q: q, ts: Date.now() });
+      localStorage.setItem("forge-questions-v1", JSON.stringify(log.slice(0, 100)));
+    } catch (e) {}
+    window.open("https://claude.ai/new?q=" + encodeURIComponent(q), "_blank");
+  });
+})();
 </script>
 </body>
 </html>
