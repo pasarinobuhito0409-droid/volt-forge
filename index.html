@@ -781,8 +781,9 @@
     </div>
     <textarea id="askFree" placeholder="自由に書いてもOK（例: 断面積ってどこの面積？）"></textarea>
     <div class="ask-preview" id="askPreview"></div>
-    <button class="ask-send" id="askSend">Claudeを開いて質問する →</button>
-    <div class="ask-log">📓 質問は「俺の質問ノート」にも自動保存（復習ネタ化）</div>
+    <button class="ask-send" id="askSend">📮 相棒ポストに送る →</button>
+    <div class="ask-log">相棒（Fable）が読んで、<b>回答＋教科書の改善</b>までやる<br>
+      <a id="askNow" href="#" style="color:#7fc6e8">⚡いますぐClaudeアプリで聞く場合はこちら</a></div>
   </div>
 </div>
 
@@ -1017,13 +1018,13 @@ const LESSONS = [
       no: "MISSION 02 ── 電池を積む",
       q: "電池を2本直列（縦つなぎ）。<br>押す力は？",
       opts: ["変わらない", "2倍", "半分"], ans: 1,
-      ansLine: "2倍（1.5V＋1.5V＝3V。足し算になる）"
+      ansLine: "2倍（1.5V＋1.5V＝3V）。<br><br>なぜ足せる？<br>ポンプ2台を直列にすると<br>押しが重なるのと同じ。<br>電子の偏りが2段重ねになる。"
     },
     sliderLabel: "電圧", val: (v) => (v * 0.12).toFixed(1) + "V", grabAxis: "x", springBack: false,
     note: "スライダーで電池を積め（電圧UP）。<br>ランプの定格（限界）は6V。9.6Vを超えると…プチッ",
     legend: ['<span style="color:#ffe9a3">■ 電池の本数＝電圧</span>', '<span style="color:#7fe0ff">● 粒の速さ＝勢い</span>'],
     cards: [
-      "電圧（でんあつ）＝<b>押す力</b>。<br>単位はV（ボルト）。",
+      "なぜ押せる？<br>電子は<b>マイナス同士で反発</b><br>（磁石の同極と同じ）。<br><br>電池はマイナス極に<br>電子をぎゅうぎゅう詰めにする。<br><br>混んだ側が押し、<br>空いた側が引く。<br>その<b>偏りの差</b>＝電圧(V)。",
       "直列（ちょくれつ＝縦つなぎ）は<br><em>足し算</em>。<br>1.5V＋1.5V＝3V。",
       "強すぎると部品が死ぬ。<br>部品には<b>定格</b>（ていかく＝限界の表示）がある。"
     ],
@@ -4283,13 +4284,25 @@ if ("serviceWorker" in navigator) {
   });
   document.getElementById("askClose").addEventListener("click", () => { modal.style.display = "none"; });
   modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
-  document.getElementById("askSend").addEventListener("click", () => {
-    const q = build();
+  function saveLog(q) {
     try {
       const log = JSON.parse(localStorage.getItem("forge-questions-v1") || "[]");
       log.unshift({ app: "volt", lesson: (typeof cur !== "undefined" && cur) ? cur.title : "", q: q, ts: Date.now() });
       localStorage.setItem("forge-questions-v1", JSON.stringify(log.slice(0, 100)));
     } catch (e) {}
+  }
+  /* 📮 相棒ポスト＝リポのIssue（掲示板）へ。相棒が巡回して回答＋教科書改善 */
+  document.getElementById("askSend").addEventListener("click", () => {
+    const q = build();
+    saveLog(q);
+    const title = "🙋 " + ((typeof cur !== "undefined" && cur) ? (cur.tag + " " + cur.title) : "質問");
+    window.open("https://github.com/pasarinobuhito0409-droid/volt-forge/issues/new?title=" +
+      encodeURIComponent(title) + "&body=" + encodeURIComponent(q), "_blank");
+  });
+  document.getElementById("askNow").addEventListener("click", (e) => {
+    e.preventDefault();
+    const q = build();
+    saveLog(q);
     window.open("https://claude.ai/new?q=" + encodeURIComponent(q), "_blank");
   });
 })();
