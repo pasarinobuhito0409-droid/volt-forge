@@ -781,9 +781,9 @@
     </div>
     <textarea id="askFree" placeholder="自由に書いてもOK（例: 断面積ってどこの面積？）"></textarea>
     <div class="ask-preview" id="askPreview"></div>
-    <button class="ask-send" id="askSend">📮 相棒ポストに送る →</button>
-    <div class="ask-log">相棒（Fable）が読んで、<b>回答＋教科書の改善</b>までやる<br>
-      <a id="askNow" href="#" style="color:#7fc6e8">⚡いますぐClaudeアプリで聞く場合はこちら</a></div>
+    <button class="ask-send" id="askSend">⚡ 相棒に質問（即答） →</button>
+    <div class="ask-log">📓 質問は自動でノートに残る（相棒の教科書改善ネタ）<br>
+      <a id="askNow" href="#" style="color:#7fc6e8">📮 GitHubポストで送る（ログイン済みの人向け）</a></div>
   </div>
 </div>
 
@@ -4374,15 +4374,15 @@ if ("serviceWorker" in navigator) {
   document.getElementById("askSend").addEventListener("click", () => {
     const q = build();
     saveLog(q);
-    const title = "🙋 " + ((typeof cur !== "undefined" && cur) ? (cur.tag + " " + cur.title) : "質問");
-    window.open("https://github.com/pasarinobuhito0409-droid/volt-forge/issues/new?title=" +
-      encodeURIComponent(title) + "&body=" + encodeURIComponent(q), "_blank");
+    window.open("https://claude.ai/new?q=" + encodeURIComponent(q), "_blank");
   });
   document.getElementById("askNow").addEventListener("click", (e) => {
     e.preventDefault();
     const q = build();
     saveLog(q);
-    window.open("https://claude.ai/new?q=" + encodeURIComponent(q), "_blank");
+    const title = "🙋 " + ((typeof cur !== "undefined" && cur) ? (cur.tag + " " + cur.title) : "質問");
+    window.open("https://github.com/pasarinobuhito0409-droid/volt-forge/issues/new?title=" +
+      encodeURIComponent(title) + "&body=" + encodeURIComponent(q), "_blank");
   });
 })();
 </script>
